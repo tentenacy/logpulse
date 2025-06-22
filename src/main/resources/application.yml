@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: logpulse
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/logpulse
+    username: root
+    password: 1234
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+    show-sql: true
+
+logging:
+  level:
+    com.portfolio.logpulse: DEBUG
+    org.springframework: INFO
