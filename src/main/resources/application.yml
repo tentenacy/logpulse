@@ -3,7 +3,7 @@ spring:
     name: logpulse
 
   datasource:
-    url: jdbc:mysql://localhost:3306/logpulse
+    url: jdbc:mysql://localhost:13306/logpulse
     username: root
     password: 1234
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -16,7 +16,44 @@ spring:
         dialect: org.hibernate.dialect.MySQLDialect
     show-sql: true
 
+  kafka:
+    bootstrap-servers: localhost:19092
+    consumer:
+      group-id: logpulse-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    properties:
+      reconnect.backoff.ms: 1000
+      reconnect.backoff.max.ms: 10000
+      retry.backoff.ms: 1000
+      client.id: logpulse-client
+
+  batch:
+    jdbc:
+      initialize-schema: always
+    job:
+      enabled: false
+
+  sql:
+    init:
+      mode: always
+      platform: mysql
+
 logging:
   level:
-    com.portfolio.logpulse: DEBUG
+    com.tenacy.logpulse: DEBUG
     org.springframework: INFO
+    org.apache.kafka: DEBUG
+    org.springframework.kafka: DEBUG
+
+logpulse:
+  collector:
+    directory: ${user.home}/logpulse/logs
+    file-pattern: "*.log"
+  kafka:
+    topics:
+      raw-logs: raw-logs
