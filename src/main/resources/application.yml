@@ -51,6 +51,9 @@ logging:
     org.springframework.kafka: DEBUG
 
 logpulse:
+  batch:
+    chunk-size: 100
+    archive-days: 30
   collector:
     directory: ${user.home}/logpulse/logs
     file-pattern: "*.log"
