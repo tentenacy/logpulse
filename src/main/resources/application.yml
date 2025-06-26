@@ -43,6 +43,10 @@ spring:
       mode: always
       platform: mysql
 
+  elasticsearch:
+    rest:
+      uris: localhost:19200
+
 logging:
   level:
     com.tenacy.logpulse: DEBUG

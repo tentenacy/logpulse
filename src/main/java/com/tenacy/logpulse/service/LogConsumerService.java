@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tenacy.logpulse.api.dto.LogEventDto;
 import com.tenacy.logpulse.domain.LogEntry;
 import com.tenacy.logpulse.domain.LogRepository;
+import com.tenacy.logpulse.elasticsearch.service.ElasticsearchService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 public class LogConsumerService {
 
     private final LogRepository logRepository;
+    private final ElasticsearchService elasticsearchService;
     private final ObjectMapper objectMapper;
 
     @KafkaListener(topics = "${logpulse.kafka.topics.raw-logs}", groupId = "${spring.kafka.consumer.group-id}")
@@ -30,8 +32,13 @@ public class LogConsumerService {
                     .logLevel(logEventDto.getLogLevel())
                     .build();
 
-            logRepository.save(logEntry);
-            log.debug("Saved log entry to database: {}", logEntry);
+            // MySQL에 저장
+            LogEntry savedEntry = logRepository.save(logEntry);
+            log.debug("Saved log entry to database: {}", savedEntry);
+
+            // Elasticsearch에 저장
+            elasticsearchService.saveLog(savedEntry);
+            log.debug("Saved log entry to Elasticsearch: {}", savedEntry);
         } catch (JsonProcessingException e) {
             log.error("Failed to deserialize log event: {}", message, e);
         }
