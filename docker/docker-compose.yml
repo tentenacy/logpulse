@@ -46,9 +46,37 @@ services:
     networks:
       - logpulse-network
 
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.0
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=false
+    ports:
+      - "19200:9200"
+      - "19300:9300"
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+    networks:
+      - logpulse-network
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.17.0
+    container_name: kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "15601:5601"
+    depends_on:
+      - elasticsearch
+    networks:
+      - logpulse-network
+
 networks:
   logpulse-network:
     driver: bridge
 
 volumes:
   mysql-data:
+  es-data:
