@@ -11,6 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -31,6 +33,10 @@ public class LogConsumerService {
                     .content(logEventDto.getContent())
                     .logLevel(logEventDto.getLogLevel())
                     .build();
+
+            if (logEventDto.getTimestamp() == null) {
+                logEventDto.setTimestamp(LocalDateTime.now());
+            }
 
             // MySQL에 저장
             LogEntry savedEntry = logRepository.save(logEntry);
