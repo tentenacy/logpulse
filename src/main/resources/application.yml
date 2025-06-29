@@ -64,3 +64,6 @@ logpulse:
   kafka:
     topics:
       raw-logs: raw-logs
+  filter:
+    excluded-sources: test-source
+    min-level: INFO

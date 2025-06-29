@@ -15,7 +15,7 @@ public class LogServiceActivator {
 
     private final LogProducerService logProducerService;
 
-    @ServiceActivator(inputChannel = "filteredLogChannel", outputChannel = "outputLogChannel")
+    @ServiceActivator(inputChannel = "filteredLogChannel")
     public LogEventDto processLog(Message<LogEventDto> message) {
         LogEventDto logEvent = message.getPayload();
 

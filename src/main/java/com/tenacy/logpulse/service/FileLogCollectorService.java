@@ -20,7 +20,7 @@ import java.util.Map;
 @Slf4j
 public class FileLogCollectorService {
 
-    private final LogProducerService logProducerService;
+    private final IntegrationLogService integrationLogService;
 
     @Value("${logpulse.collector.directory}")
     private String logsDirectory;
@@ -67,7 +67,8 @@ public class FileLogCollectorService {
                     file.seek(position);
                     String line;
                     while ((line = file.readLine()) != null) {
-                        // 간단한 로그 파싱 (실제로는 더 복잡한 파싱 로직이 필요할 수 있음)
+                        // 간단한 로그 파싱
+                        // 추후 더 복잡한 파싱 로직으로 구현 예정
                         processLogLine(path.getFileName().toString(), line);
                         position = file.getFilePointer();
                     }
@@ -81,8 +82,7 @@ public class FileLogCollectorService {
     }
 
     private void processLogLine(String source, String line) {
-        // 실제 프로젝트에서는 로그 패턴에 맞게 파싱하는 로직 구현 필요
-        // 여기서는 간단히 로그 레벨을 추출하는 예시
+        // 간단히 로그 레벨을 추출
         String logLevel = "INFO";
         if (line.contains("ERROR")) {
             logLevel = "ERROR";
@@ -99,6 +99,7 @@ public class FileLogCollectorService {
                 .timestamp(LocalDateTime.now())
                 .build();
 
-        logProducerService.sendLogEvent(logEventDto);
+        // IntegrationLogService를 통해 로그 처리 파이프라인으로 전달
+        integrationLogService.processLog(logEventDto);
     }
 }
