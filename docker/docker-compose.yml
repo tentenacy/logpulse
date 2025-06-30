@@ -89,6 +89,22 @@ services:
       - '--web.console.libraries=/usr/share/prometheus/console_libraries'
       - '--web.console.templates=/usr/share/prometheus/consoles'
 
+  grafana:
+    image: grafana/grafana:9.1.0
+    container_name: grafana
+    ports:
+      - "13000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    networks:
+      - logpulse-network
+    depends_on:
+      - prometheus
+
 networks:
   logpulse-network:
     driver: bridge
@@ -97,3 +113,4 @@ volumes:
   mysql-data:
   es-data:
   prometheus-data:
+  grafana-data:
