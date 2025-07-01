@@ -23,6 +23,11 @@ spring:
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      # 병렬 처리 설정
+      max-poll-records: 500
+      fetch-max-wait: 500
+      fetch-min-size: 1
+      concurrency: 5
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
@@ -31,6 +36,9 @@ spring:
       reconnect.backoff.max.ms: 10000
       retry.backoff.ms: 1000
       client.id: logpulse-client
+    listener:
+      concurrency: 5  # 컨슈머 리스너 스레드 수
+      type: batch     # 배치 처리 설정
 
   batch:
     jdbc:
