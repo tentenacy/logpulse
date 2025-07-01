@@ -21,6 +21,7 @@ public class LogConsumerService {
     private final LogRepository logRepository;
     private final ElasticsearchService elasticsearchService;
     private final LogMetricsService logMetricsService;
+    private final LogAlertService logAlertService;
     private final ObjectMapper objectMapper;
 
     @KafkaListener(topics = "${logpulse.kafka.topics.raw-logs}", groupId = "${spring.kafka.consumer.group-id}")
@@ -29,7 +30,11 @@ public class LogConsumerService {
             LogEventDto logEventDto = objectMapper.readValue(message, LogEventDto.class);
             log.debug("Received log event from Kafka: {}", logEventDto);
 
+            // 메트릭 기록
             logMetricsService.recordLog(logEventDto);
+
+            // 알림 체크
+            logAlertService.checkLogForAlert(logEventDto);
 
             LogEntry logEntry = LogEntry.builder()
                     .source(logEventDto.getSource())

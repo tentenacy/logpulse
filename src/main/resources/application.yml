@@ -67,6 +67,9 @@ logpulse:
   filter:
     excluded-sources: test-source
     min-level: INFO
+  alert:
+    error-threshold: 10
+    error-time-window: 60000  # 1분
 
 management:
   endpoints:
