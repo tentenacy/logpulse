@@ -5,6 +5,7 @@ import com.tenacy.logpulse.elasticsearch.document.LogDocument;
 import com.tenacy.logpulse.elasticsearch.repository.LogDocumentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.elasticsearch.client.elc.NativeQuery;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
@@ -25,6 +26,9 @@ public class ElasticsearchService {
     private final LogDocumentRepository logDocumentRepository;
     private final ElasticsearchOperations elasticsearchOperations;
 
+    @Value("${logpulse.elasticsearch.bulk-size:1000}")
+    private int bulkSize;
+
     public void saveLog(LogEntry logEntry) {
         LogDocument logDocument = LogDocument.fromLogEntry(logEntry);
         logDocumentRepository.save(logDocument);
@@ -32,13 +36,29 @@ public class ElasticsearchService {
     }
 
     public void saveAll(List<LogEntry> logEntries) {
-        List<LogDocument> logDocuments = logEntries.stream()
-                .map(LogDocument::fromLogEntry)
-                .collect(Collectors.toList());
-        logDocumentRepository.saveAll(logDocuments);
-        log.debug("Saved {} logs to Elasticsearch", logDocuments.size());
+        if (logEntries.isEmpty()) {
+            return;
+        }
+
+        // 벌크 처리를 위해 청크로 분할
+        int totalSize = logEntries.size();
+        int chunkCount = (totalSize + bulkSize - 1) / bulkSize;
+
+        for (int i = 0; i < chunkCount; i++) {
+            int fromIndex = i * bulkSize;
+            int toIndex = Math.min(fromIndex + bulkSize, totalSize);
+
+            List<LogDocument> chunk = logEntries.subList(fromIndex, toIndex).stream()
+                    .map(LogDocument::fromLogEntry)
+                    .collect(Collectors.toList());
+
+            logDocumentRepository.saveAll(chunk);
+            log.debug("Saved chunk of {} logs to Elasticsearch (chunk {}/{})",
+                    chunk.size(), i+1, chunkCount);
+        }
     }
 
+    // 기존 메소드들 유지
     public List<LogDocument> findByLogLevel(String logLevel) {
         return logDocumentRepository.findByLogLevel(logLevel);
     }
@@ -68,5 +88,11 @@ public class ElasticsearchService {
         return searchHits.getSearchHits().stream()
                 .map(SearchHit::getContent)
                 .collect(Collectors.toList());
+    }
+
+    // Elasticsearch 인덱스 최적화
+    public void optimizeIndex() {
+        log.info("Optimizing Elasticsearch index for logs");
+        // 실제 구현은 ElasticsearchOperations를 사용하여 구현
     }
 }

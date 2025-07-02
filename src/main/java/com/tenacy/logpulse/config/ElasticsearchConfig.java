@@ -1,4 +1,3 @@
-// ElasticsearchConfig.java
 package com.tenacy.logpulse.config;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
@@ -6,7 +5,9 @@ import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.ElasticsearchTransport;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import org.apache.http.HttpHost;
+import org.apache.http.client.config.RequestConfig;
 import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestClientBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,15 +25,35 @@ public class ElasticsearchConfig {
     @Value("${spring.elasticsearch.rest.uris}")
     private String elasticsearchUri;
 
+    @Value("${logpulse.elasticsearch.socket-timeout:30000}")
+    private int socketTimeout;
+
+    @Value("${logpulse.elasticsearch.connect-timeout:5000}")
+    private int connectTimeout;
+
     @Bean
     public RestClient restClient() {
         String[] hostAndPort = elasticsearchUri.split(":");
         String host = hostAndPort[0];
         int port = Integer.parseInt(hostAndPort[1]);
 
-        return RestClient.builder(
+        RestClientBuilder builder = RestClient.builder(
                 new HttpHost(host, port)
-        ).build();
+        );
+
+        // 타임아웃 설정
+        builder.setRequestConfigCallback(
+                (RequestConfig.Builder requestConfigBuilder) -> requestConfigBuilder
+                        .setSocketTimeout(socketTimeout)
+                        .setConnectTimeout(connectTimeout)
+        );
+
+        // 대량 처리를 위한 커넥션 풀 설정
+        builder.setHttpClientConfigCallback(httpClientBuilder ->
+                httpClientBuilder.setMaxConnTotal(100)
+                        .setMaxConnPerRoute(30));
+
+        return builder.build();
     }
 
     @Bean

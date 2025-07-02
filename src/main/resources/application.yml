@@ -90,6 +90,11 @@ logpulse:
     error-time-window: 60000  # 1분
   cleanup:
     retention-days: 90
+  elasticsearch:
+    bulk-size: 1000
+    index-prefix: logpulse-
+    shards: 5
+    replicas: 1
 
 management:
   endpoints:
