@@ -3,7 +3,7 @@ spring:
     name: logpulse
 
   datasource:
-    url: jdbc:mysql://localhost:13306/logpulse
+    url: jdbc:mysql://localhost:13306/logpulse?rewriteBatchedStatements=true
     username: root
     password: 1234
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -24,16 +24,17 @@ spring:
           batch_versioned_data: true
         order_inserts: true
         order_updates: true
-    show-sql: false
+        generate_statistics: true
+    show-sql: true
 
   kafka:
     bootstrap-servers: localhost:19092
     consumer:
       group-id: logpulse-group
       auto-offset-reset: earliest
+      enable-auto-commit: false
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      # 병렬 처리 설정
       max-poll-records: 500
       fetch-max-wait: 500
       fetch-min-size: 1
@@ -47,8 +48,9 @@ spring:
       retry.backoff.ms: 1000
       client.id: logpulse-client
     listener:
-      concurrency: 5  # 컨슈머 리스너 스레드 수
-      type: batch     # 배치 처리 설정
+      concurrency: 5
+      type: batch
+      ack-mode: MANUAL_IMMEDIATE
 
   batch:
     jdbc:

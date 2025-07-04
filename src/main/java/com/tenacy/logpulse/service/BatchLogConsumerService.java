@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tenacy.logpulse.api.dto.LogEventDto;
 import com.tenacy.logpulse.domain.LogEntry;
-import com.tenacy.logpulse.domain.LogRepository;
 import com.tenacy.logpulse.elasticsearch.service.ElasticsearchService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +20,7 @@ import java.util.List;
 @Slf4j
 public class BatchLogConsumerService {
 
-    private final LogRepository logRepository;
+    private final JdbcBatchInsertService jdbcBatchInsertService;
     private final ElasticsearchService elasticsearchService;
     private final LogMetricsService logMetricsService;
     private final LogAlertService logAlertService;
@@ -65,9 +64,9 @@ public class BatchLogConsumerService {
         }
 
         if (!logEntries.isEmpty()) {
-            // 한번에 MySQL에 저장 (배치 처리)
-            List<LogEntry> savedEntries = logRepository.saveAll(logEntries);
-            log.debug("Saved {} log entries to database", savedEntries.size());
+            // JDBC 배치 인서트 사용
+            jdbcBatchInsertService.batchInsert(logEntries);
+            log.debug("Saved {} log entries to database using JDBC batch update", logEntries.size());
 
             // Elasticsearch에 한번에 저장 (배치 처리)
             elasticsearchService.saveAll(logEntries);

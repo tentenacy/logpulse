@@ -30,7 +30,7 @@ public class ElasticsearchService {
     private int bulkSize;
 
     public void saveLog(LogEntry logEntry) {
-        LogDocument logDocument = LogDocument.fromLogEntry(logEntry);
+        LogDocument logDocument = LogDocument.of(logEntry);
         logDocumentRepository.save(logDocument);
         log.debug("Saved log to Elasticsearch: {}", logDocument);
     }
@@ -49,7 +49,7 @@ public class ElasticsearchService {
             int toIndex = Math.min(fromIndex + bulkSize, totalSize);
 
             List<LogDocument> chunk = logEntries.subList(fromIndex, toIndex).stream()
-                    .map(LogDocument::fromLogEntry)
+                    .map(LogDocument::of)
                     .collect(Collectors.toList());
 
             logDocumentRepository.saveAll(chunk);
