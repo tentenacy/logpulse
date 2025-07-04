@@ -10,7 +10,6 @@ import org.springframework.integration.annotation.IntegrationComponentScan;
 import org.springframework.integration.channel.DirectChannel;
 import org.springframework.integration.config.EnableIntegration;
 import org.springframework.integration.dsl.IntegrationFlow;
-import org.springframework.integration.dsl.MessageChannels;
 import org.springframework.messaging.MessageChannel;
 
 @Slf4j
@@ -24,110 +23,48 @@ public class IntegrationConfig {
 
     @Bean
     public MessageChannel logInputChannel() {
-        return MessageChannels.direct().getObject();
-    }
-
-    @Bean
-    public MessageChannel errorLogChannel() {
         return new DirectChannel();
     }
 
     @Bean
-    public MessageChannel warnLogChannel() {
-        return new DirectChannel();
-    }
-
-    @Bean
-    public MessageChannel infoLogChannel() {
-        return new DirectChannel();
-    }
-
-    @Bean
-    public MessageChannel debugLogChannel() {
-        return new DirectChannel();
-    }
-
-    @Bean
-    public MessageChannel enrichedLogChannel() {
-        return new DirectChannel();
-    }
-
-    @Bean
-    public MessageChannel filteredLogChannel() {
+    public MessageChannel processedLogChannel() {
         return new DirectChannel();
     }
 
     @Bean
     public IntegrationFlow logProcessingFlow() {
         return IntegrationFlow.from("logInputChannel")
-                .<LogEventDto, String>route(LogEventDto::getLogLevel, mapping -> mapping
-                        .subFlowMapping("ERROR", sf -> sf.channel("errorLogChannel"))
-                        .subFlowMapping("WARN", sf -> sf.channel("warnLogChannel"))
-                        .subFlowMapping("INFO", sf -> sf.channel("infoLogChannel"))
-                        .subFlowMapping("DEBUG", sf -> sf.channel("debugLogChannel"))
-                        .defaultSubFlowMapping(sf -> sf.channel("infoLogChannel")))
-                .get();
-    }
-
-    @Bean
-    public IntegrationFlow errorLogFlow() {
-        return IntegrationFlow.from("errorLogChannel")
-                .enrichHeaders(h -> h
-                        .headerExpression("processedTime", "T(java.time.LocalDateTime).now()")
-                        .headerExpression("correlationId", "T(java.util.UUID).randomUUID().toString()"))
-                .channel("enrichedLogChannel")
-                .get();
-    }
-
-    @Bean
-    public IntegrationFlow warnLogFlow() {
-        return IntegrationFlow.from("warnLogChannel")
-                .enrichHeaders(h -> h
-                        .headerExpression("processedTime", "T(java.time.LocalDateTime).now()")
-                        .headerExpression("correlationId", "T(java.util.UUID).randomUUID().toString()"))
-                .channel("enrichedLogChannel")
-                .get();
-    }
-
-    @Bean
-    public IntegrationFlow infoLogFlow() {
-        return IntegrationFlow.from("infoLogChannel")
-                .enrichHeaders(h -> h
-                        .headerExpression("processedTime", "T(java.time.LocalDateTime).now()")
-                        .headerExpression("correlationId", "T(java.util.UUID).randomUUID().toString()"))
-                .channel("enrichedLogChannel")
-                .get();
-    }
-
-    @Bean
-    public IntegrationFlow debugLogFlow() {
-        return IntegrationFlow.from("debugLogChannel")
-                .enrichHeaders(h -> h
-                        .headerExpression("processedTime", "T(java.time.LocalDateTime).now()")
-                        .headerExpression("correlationId", "T(java.util.UUID).randomUUID().toString()"))
-                .channel("enrichedLogChannel")
-                .get();
-    }
-
-    @Bean
-    public IntegrationFlow enrichedLogFlow() {
-        return IntegrationFlow.from("enrichedLogChannel")
-                .filter(message -> {
-                    LogEventDto logEvent = (LogEventDto) message;
-                    return !logEvent.getSource().equals("test-source");
+                // 페이로드 타입 체크
+                .<Object, Object>transform(payload -> {
+                    if (payload instanceof LogEventDto) {
+                        return payload;
+                    }
+                    log.warn("Unexpected payload type: {}",
+                            payload != null ? payload.getClass().getName() : "null");
+                    return payload;
                 })
-                .channel("filteredLogChannel")
-                .get();
-    }
+                // 메시지 처리
+                .<LogEventDto>handle((logEvent, headers) -> {
+                    try {
+                        // test-source 필터링
+                        if ("test-source".equals(logEvent.getSource())) {
+                            return null;
+                        }
 
-    @Bean
-    public IntegrationFlow filteredLogFlow() {
-        return IntegrationFlow.from("filteredLogChannel")
-                .handle(message -> {
-                    LogEventDto logEvent = (LogEventDto) message;
-                    logProducerService.sendLogEvent(logEvent);
-                    log.debug("Log processing completed: {}", logEvent);
+                        // 타임스탬프 및 로그 레벨 처리
+                        if (logEvent.getTimestamp() == null) {
+                            logEvent.setTimestamp(java.time.LocalDateTime.now());
+                        }
+
+                        // Kafka로 로그 이벤트 전송
+                        logProducerService.sendLogEvent(logEvent);
+                        log.debug("Log processing completed: {}", logEvent);
+                    } catch (Exception e) {
+                        log.error("Error processing log event: {}", e.getMessage(), e);
+                    }
+                    return null;
                 })
+                .channel("processedLogChannel")
                 .get();
     }
 }

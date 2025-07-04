@@ -24,7 +24,7 @@ spring:
           batch_versioned_data: true
         order_inserts: true
         order_updates: true
-    show-sql: true
+    show-sql: false
 
   kafka:
     bootstrap-servers: localhost:19092
@@ -67,10 +67,14 @@ spring:
 
 logging:
   level:
-    com.tenacy.logpulse: DEBUG
-    org.springframework: INFO
-    org.apache.kafka: DEBUG
-    org.springframework.kafka: DEBUG
+    root: ERROR                   # 기본 로그 레벨을 ERROR로 설정
+    com.tenacy.logpulse: WARN     # 애플리케이션 코드는 WARN만 출력
+    org.springframework: ERROR    # Spring 프레임워크는 ERROR만 출력
+    org.apache.kafka: ERROR       # Kafka 관련 로그는 ERROR만 출력
+    org.springframework.kafka: ERROR # Spring Kafka 로그는 ERROR만 출력
+    org.hibernate: ERROR          # Hibernate 로그는 ERROR만 출력
+    org.hibernate.SQL: OFF        # SQL 쿼리 로그 완전 비활성화
+    org.hibernate.type: OFF       # Hibernate 타입 로그 비활성화
 
 logpulse:
   batch:
