@@ -58,6 +58,24 @@ services:
     networks:
       - logpulse-network
 
+  kafka-exporter:
+    image: danielqsj/kafka-exporter:v1.9.0
+    container_name: kafka-exporter
+    ports:
+      - "19308:9308"
+    command:
+      - "--kafka.server=broker:29092"
+      - "--topic.filter=.*"
+      - "--group.filter=.*"
+      - "--web.listen-address=:9308"
+      - "--web.telemetry-path=/metrics"
+      - "--log.level=info"
+    depends_on:
+      - broker
+    networks:
+      - logpulse-network
+    restart: on-failure
+
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.17.0
     container_name: elasticsearch
@@ -73,6 +91,19 @@ services:
     networks:
       - logpulse-network
 
+  elasticsearch-exporter:
+    image: quay.io/prometheuscommunity/elasticsearch-exporter:v1.9.0
+    container_name: elasticsearch-exporter
+    ports:
+      - "19114:9114"
+    command:
+      - '--es.uri=http://elasticsearch:9200'
+      - '--web.listen-address=:9114'
+    depends_on:
+      - elasticsearch
+    networks:
+      - logpulse-network
+
   kibana:
     image: docker.elastic.co/kibana/kibana:7.17.0
     container_name: kibana
@@ -85,6 +116,23 @@ services:
     networks:
       - logpulse-network
 
+  node-exporter:
+    image: prom/node-exporter:v1.5.0
+    container_name: node-exporter
+    ports:
+      - "19100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--path.rootfs=/rootfs'
+      - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
+    networks:
+      - logpulse-network
+
   prometheus:
     image: prom/prometheus:v2.37.0
     container_name: prometheus
@@ -92,6 +140,7 @@ services:
       - "19090:9090"
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus/rules:/etc/prometheus/rules
       - prometheus-data:/prometheus
     networks:
       - logpulse-network
@@ -100,6 +149,11 @@ services:
       - '--storage.tsdb.path=/prometheus'
       - '--web.console.libraries=/usr/share/prometheus/console_libraries'
       - '--web.console.templates=/usr/share/prometheus/consoles'
+    depends_on:
+      - elasticsearch-exporter
+      - kafka-exporter
+      - mysqld-exporter
+      - node-exporter
 
   grafana:
     image: grafana/grafana:9.1.0
@@ -109,6 +163,7 @@ services:
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
     volumes:
       - grafana-data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning
