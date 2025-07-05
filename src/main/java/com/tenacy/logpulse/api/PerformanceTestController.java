@@ -20,6 +20,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @RestController
 @RequestMapping("/api/v1/performance")
@@ -52,15 +53,27 @@ public class PerformanceTestController {
         // 작업 목록 생성
         List<CompletableFuture<Void>> futures = new ArrayList<>();
 
+        // 각 스레드가 처리할 로그 수 계산 (균등 분배)
         int logsPerThread = totalLogs / concurrentThreads;
+        int remainingLogs = totalLogs % concurrentThreads;
+
+        // 실제 생성될 로그 수 추적
+        AtomicInteger actualLogCount = new AtomicInteger(0);
 
         for (int t = 0; t < concurrentThreads; t++) {
+            // 마지막 스레드가 남은 로그를 처리하도록 함
+            int threadLogsCount = logsPerThread + (t < remainingLogs ? 1 : 0);
             int threadIndex = t;
+
             CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
                 try {
-                    for (int b = 0; b < logsPerThread / batchSize; b++) {
+                    int logsCreated = 0;
+                    while (logsCreated < threadLogsCount) {
+                        // 남은 로그 수에 맞게 배치 크기 조정
+                        int currentBatchSize = Math.min(batchSize, threadLogsCount - logsCreated);
+
                         // 배치 단위로 로그 생성 및 전송
-                        for (int i = 0; i < batchSize; i++) {
+                        for (int i = 0; i < currentBatchSize; i++) {
                             String logLevel = getRandomLogLevel(logLevels, logLevelDistribution);
 
                             LogEventDto logEventDto = LogEventDto.builder()
@@ -72,8 +85,14 @@ public class PerformanceTestController {
                                     .build();
 
                             integrationLogService.processLog(logEventDto);
+                            logsCreated++;
+                            actualLogCount.incrementAndGet();
                         }
                     }
+
+                    log.info("Thread {} completed: created {} logs",
+                            threadIndex, logsCreated);
+
                 } catch (Exception e) {
                     log.error("Error in performance test thread {}", threadIndex, e);
                 }
@@ -84,6 +103,9 @@ public class PerformanceTestController {
 
         // 모든 작업 완료 대기
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+
+        int totalCreatedLogs = actualLogCount.get();
+        log.info("Total logs created: {}", totalCreatedLogs);
 
         // 스레드 풀 종료
         executorService.shutdown();
@@ -98,16 +120,16 @@ public class PerformanceTestController {
         long endTime = System.currentTimeMillis();
         long elapsedTimeMs = endTime - startTime;
 
-        double logsPerSecond = (double) totalLogs / (elapsedTimeMs / 1000.0);
+        double logsPerSecond = (double) totalCreatedLogs / (elapsedTimeMs / 1000.0);
 
         PerformanceTestResponse response = PerformanceTestResponse.builder()
-                .totalLogs(totalLogs)
+                .totalLogs(totalCreatedLogs)  // 실제 생성된 로그 수 반환
                 .elapsedTimeMs(elapsedTimeMs)
                 .logsPerSecond(logsPerSecond)
                 .build();
 
         log.info("Performance test completed: {} logs in {} ms ({} logs/sec)",
-                totalLogs, elapsedTimeMs, String.format("%.2f", logsPerSecond));
+                totalCreatedLogs, elapsedTimeMs, String.format("%.2f", logsPerSecond));
 
         return ResponseEntity.ok(response);
     }
