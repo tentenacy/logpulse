@@ -1,21 +1,13 @@
 spring:
   application:
     name: logpulse
-
+  profiles:
+    active: dev
   datasource:
-    url: jdbc:mysql://localhost:13306/logpulse?rewriteBatchedStatements=true
-    username: root
-    password: 1234
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
-      maximum-pool-size: 20
-      minimum-idle: 10
-      idle-timeout: 30000
       pool-name: LogPulseHikariPool
-
   jpa:
-    hibernate:
-      ddl-auto: update
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
@@ -24,75 +16,44 @@ spring:
           batch_versioned_data: true
         order_inserts: true
         order_updates: true
-        generate_statistics: true
-    show-sql: true
-
-  kafka:
-    bootstrap-servers: localhost:19092
-    consumer:
-      group-id: logpulse-group
-      auto-offset-reset: earliest
-      enable-auto-commit: false
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      max-poll-records: 500
-      fetch-max-wait: 500
-      fetch-min-size: 1
-      concurrency: 5
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.apache.kafka.common.serialization.StringSerializer
-    properties:
-      reconnect.backoff.ms: 1000
-      reconnect.backoff.max.ms: 10000
-      retry.backoff.ms: 1000
-      client.id: logpulse-client
-    listener:
-      concurrency: 5
-      type: batch
-      ack-mode: MANUAL_IMMEDIATE
-
   batch:
     jdbc:
       initialize-schema: always
     job:
       enabled: false
-
   sql:
     init:
       mode: always
       platform: mysql
+  kafka:
+    consumer:
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    listener:
+      type: batch
+      ack-mode: MANUAL_IMMEDIATE
 
-  elasticsearch:
-    rest:
-      uris: localhost:19200
-
-logging:
-  level:
-    root: INFO                    # 기본 로그 레벨을 INFO로 변경
-    com.tenacy.logpulse: INFO     # 애플리케이션 코드도 INFO 레벨로 변경
-    com.tenacy.logpulse.integration: INFO  # 통합 관련 로그는 INFO 레벨로
-    com.tenacy.logpulse.monitor: INFO      # 모니터링 관련 로그는 INFO 레벨로
-    org.springframework: ERROR    # Spring 프레임워크는 ERROR만 유지
-    org.apache.kafka: ERROR       # Kafka 관련 로그는 ERROR만 유지
-    org.springframework.kafka: ERROR # Spring Kafka 로그는 ERROR만 유지
-    org.hibernate: ERROR          # Hibernate 로그는 ERROR만 유지
-    org.hibernate.SQL: OFF        # SQL 쿼리 로그 완전 비활성화
-    org.hibernate.type: OFF       # Hibernate 타입 로그 비활성화
+server:
+  port: 8080
+  servlet:
+    context-path: /
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/plain
+    min-response-size: 1024
 
 logpulse:
-  batch:
-    chunk-size: 100
-    archive-days: 30
-  collector:
-    directory: ${user.home}/logpulse/logs
-    file-pattern: "*.log"
   kafka:
     topics:
       raw-logs: raw-logs
-  filter:
-    excluded-sources:
-    min-level: INFO
+  batch:
+    chunk-size: 100
+    archive-days: 30
   alert:
     error-threshold: 10
     error-time-window: 60000  # 1분
@@ -100,9 +61,6 @@ logpulse:
     retention-days: 90
   elasticsearch:
     bulk-size: 1000
-    index-prefix: logpulse-
-    shards: 5
-    replicas: 1
 
 management:
   endpoints:

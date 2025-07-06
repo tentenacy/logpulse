@@ -1,0 +1,55 @@
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:13306/logpulse_test?rewriteBatchedStatements=true
+    username: root
+    password: 1234
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 30000
+      pool-name: LogPulseTestHikariPool
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+  kafka:
+    bootstrap-servers: localhost:19092
+    consumer:
+      group-id: logpulse-test-group
+      max-poll-records: 100
+      concurrency: 3
+    producer:
+      client-id: logpulse-test-client
+    listener:
+      concurrency: 3
+  elasticsearch:
+    rest:
+      uris: localhost:19200
+
+logging:
+  level:
+    root: WARN
+    com.tenacy.logpulse: DEBUG
+    org.springframework: ERROR
+    org.hibernate: ERROR
+
+logpulse:
+  batch:
+    chunk-size: 50
+    archive-days: 7
+  collector:
+    directory: ${user.home}/logpulse/test-logs
+    file-pattern: "*.log"
+  kafka:
+    topics:
+      raw-logs: raw-logs-test
+  filter:
+    min-level: DEBUG
+  alert:
+    error-threshold: 3
+    error-time-window: 10000  # 10초
+  elasticsearch:
+    bulk-size: 100
+    index-prefix: logpulse-test-
+    shards: 2
+    replicas: 0
