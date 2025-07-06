@@ -69,12 +69,14 @@ spring:
 
 logging:
   level:
-    root: ERROR                   # 기본 로그 레벨을 ERROR로 설정
-    com.tenacy.logpulse: WARN     # 애플리케이션 코드는 WARN만 출력
-    org.springframework: ERROR    # Spring 프레임워크는 ERROR만 출력
-    org.apache.kafka: ERROR       # Kafka 관련 로그는 ERROR만 출력
-    org.springframework.kafka: ERROR # Spring Kafka 로그는 ERROR만 출력
-    org.hibernate: ERROR          # Hibernate 로그는 ERROR만 출력
+    root: INFO                    # 기본 로그 레벨을 INFO로 변경
+    com.tenacy.logpulse: INFO     # 애플리케이션 코드도 INFO 레벨로 변경
+    com.tenacy.logpulse.integration: INFO  # 통합 관련 로그는 INFO 레벨로
+    com.tenacy.logpulse.monitor: INFO      # 모니터링 관련 로그는 INFO 레벨로
+    org.springframework: ERROR    # Spring 프레임워크는 ERROR만 유지
+    org.apache.kafka: ERROR       # Kafka 관련 로그는 ERROR만 유지
+    org.springframework.kafka: ERROR # Spring Kafka 로그는 ERROR만 유지
+    org.hibernate: ERROR          # Hibernate 로그는 ERROR만 유지
     org.hibernate.SQL: OFF        # SQL 쿼리 로그 완전 비활성화
     org.hibernate.type: OFF       # Hibernate 타입 로그 비활성화
 
@@ -89,7 +91,7 @@ logpulse:
     topics:
       raw-logs: raw-logs
   filter:
-    excluded-sources: test-source
+    excluded-sources:
     min-level: INFO
   alert:
     error-threshold: 10

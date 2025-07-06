@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-//@Component
+@Component
 @Slf4j
 public class LogEnricher {
 
@@ -37,12 +37,10 @@ public class LogEnricher {
     private Message<LogEventDto> enrichLog(Message<LogEventDto> message, String level) {
         LogEventDto logEvent = message.getPayload();
 
-        // 타임스탬프가 없으면 현재 시간 설정
         if (logEvent.getTimestamp() == null) {
             logEvent.setTimestamp(LocalDateTime.now());
         }
 
-        // 추가 메타데이터 포함
         return MessageBuilder.withPayload(logEvent)
                 .copyHeaders(message.getHeaders())
                 .setHeader("processedTime", LocalDateTime.now())

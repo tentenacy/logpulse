@@ -9,19 +9,26 @@ import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
-//@Component
+@Component
 @Slf4j
 public class LogRouter {
 
+    private final MessageChannel errorLogChannel;
+    private final MessageChannel warnLogChannel;
     private final MessageChannel infoLogChannel;
+    private final MessageChannel debugLogChannel;
     private final Map<String, MessageChannel> channelMap;
 
     public LogRouter(MessageChannel errorLogChannel,
                      MessageChannel warnLogChannel,
                      MessageChannel infoLogChannel,
                      MessageChannel debugLogChannel) {
+        this.errorLogChannel = errorLogChannel;
+        this.warnLogChannel = warnLogChannel;
         this.infoLogChannel = infoLogChannel;
-        channelMap = Map.of(
+        this.debugLogChannel = debugLogChannel;
+
+        this.channelMap = Map.of(
                 "ERROR", errorLogChannel,
                 "WARN", warnLogChannel,
                 "INFO", infoLogChannel,
@@ -29,10 +36,10 @@ public class LogRouter {
         );
     }
 
-    @Router(inputChannel = "logInputChannel")
+    @Router
     public MessageChannel routeByLogLevel(Message<LogEventDto> message) {
         LogEventDto logEvent = message.getPayload();
-        String logLevel = logEvent.getLogLevel();
+        String logLevel = logEvent.getLogLevel().toUpperCase();
 
         log.debug("Routing log event with level {} to appropriate channel", logLevel);
 
