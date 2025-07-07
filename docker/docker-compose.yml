@@ -3,14 +3,19 @@ services:
     image: mysql:8.0
     container_name: mysql
     environment:
-      MYSQL_DATABASE: logpulse
       MYSQL_ROOT_PASSWORD: 1234
     ports:
       - "13306:3306"
     volumes:
       - mysql-data:/var/lib/mysql
+      - ./mysql/init:/docker-entrypoint-initdb.d
     networks:
       - logpulse-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p1234"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   mysqld-exporter:
     image: prom/mysqld-exporter:v0.14.0
@@ -18,9 +23,10 @@ services:
     ports:
       - "19104:9104"
     environment:
-      - DATA_SOURCE_NAME=root:1234@(mysql:3306)/logpulse
+      - DATA_SOURCE_NAME=root:1234@(mysql:3306)/
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
     networks:
       - logpulse-network
 
@@ -51,8 +57,23 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
     depends_on:
       - zookeeper
+    networks:
+      - logpulse-network
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - "18080:8080"
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=local
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=broker:29092
+      - KAFKA_CLUSTERS_0_ZOOKEEPER=zookeeper:2181
+    depends_on:
+      - broker
     networks:
       - logpulse-network
 
@@ -88,6 +109,11 @@ services:
       - es-data:/usr/share/elasticsearch/data
     networks:
       - logpulse-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   elasticsearch-exporter:
     image: quay.io/prometheuscommunity/elasticsearch-exporter:v1.9.0
@@ -98,7 +124,8 @@ services:
       - '--es.uri=http://elasticsearch:9200'
       - '--web.listen-address=:9114'
     depends_on:
-      - elasticsearch
+      elasticsearch:
+        condition: service_healthy
     networks:
       - logpulse-network
 
@@ -110,7 +137,8 @@ services:
     ports:
       - "15601:5601"
     depends_on:
-      - elasticsearch
+      elasticsearch:
+        condition: service_healthy
     networks:
       - logpulse-network
 
