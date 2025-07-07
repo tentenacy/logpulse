@@ -36,17 +36,22 @@ public class ElasticsearchService {
     }
 
     public void saveAll(List<LogEntry> logEntries) {
-        if (logEntries.isEmpty()) {
+        if (logEntries == null || logEntries.isEmpty()) {
             return;
         }
 
         // 벌크 처리를 위해 청크로 분할
         int totalSize = logEntries.size();
-        int chunkCount = (totalSize + bulkSize - 1) / bulkSize;
+
+        // bulkSize가 0이거나 음수인 경우 기본값 사용
+        int effectiveBulkSize = (bulkSize <= 0) ? 1000 : bulkSize;
+
+        // 청크 개수 계산 (0으로 나누기 방지)
+        int chunkCount = (totalSize + effectiveBulkSize - 1) / effectiveBulkSize;
 
         for (int i = 0; i < chunkCount; i++) {
-            int fromIndex = i * bulkSize;
-            int toIndex = Math.min(fromIndex + bulkSize, totalSize);
+            int fromIndex = i * effectiveBulkSize;
+            int toIndex = Math.min(fromIndex + effectiveBulkSize, totalSize);
 
             List<LogDocument> chunk = logEntries.subList(fromIndex, toIndex).stream()
                     .map(LogDocument::of)
