@@ -11,7 +11,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: create-drop
-    show-sql: true
+    show-sql: false
   kafka:
     bootstrap-servers: localhost:19092
     consumer:
@@ -29,7 +29,7 @@ spring:
 logging:
   level:
     root: WARN
-    com.tenacy.logpulse: DEBUG
+    com.tenacy.logpulse: WARN
     org.springframework: ERROR
     org.hibernate: ERROR
 
