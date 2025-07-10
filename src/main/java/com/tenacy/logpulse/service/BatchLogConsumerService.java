@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tenacy.logpulse.api.dto.LogEventDto;
 import com.tenacy.logpulse.domain.LogEntry;
 import com.tenacy.logpulse.elasticsearch.service.ElasticsearchService;
+import com.tenacy.logpulse.pattern.LogPatternDetector;
+import com.tenacy.logpulse.pattern.PatternResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -24,6 +26,7 @@ public class BatchLogConsumerService {
     private final ElasticsearchService elasticsearchService;
     private final LogMetricsService logMetricsService;
     private final LogAlertService logAlertService;
+    private final LogPatternDetector patternDetector;
     private final ObjectMapper objectMapper;
 
     @Transactional
@@ -71,6 +74,9 @@ public class BatchLogConsumerService {
             // Elasticsearch에 한번에 저장 (배치 처리)
             elasticsearchService.saveAll(logEntries);
             log.debug("Saved {} log entries to Elasticsearch", logEntries.size());
+
+            // 패턴 감지 수행 (배치 처리)
+            patternDetector.detectBatchPatterns(logEntries);
         }
     }
 }

@@ -30,14 +30,10 @@ public class LogPatternDetector {
 
     public void registerPattern(LogPattern pattern) {
         patterns.put(pattern.getPatternId(), pattern);
-        log.info("패턴 등록 완료: {} ({})", pattern.getName(), pattern.getPatternId());
     }
 
     public void unregisterPattern(String patternId) {
         LogPattern removed = patterns.remove(patternId);
-        if (removed != null) {
-            log.info("패턴 제거 완료: {} ({})", removed.getName(), patternId);
-        }
     }
 
     public List<PatternResult> detectPatterns(LogEntry logEntry) {
@@ -55,9 +51,6 @@ public class LogPatternDetector {
                             result.getMessage()
                     );
                 }
-
-                log.debug("패턴 감지: {} ({}) - {}",
-                        pattern.getName(), pattern.getPatternId(), logEntry.getContent());
             }
         }
 
@@ -79,9 +72,6 @@ public class LogPatternDetector {
                             result.getMessage()
                     );
                 }
-
-                log.debug("배치 패턴 감지: {} ({}) - {} 로그 항목",
-                        pattern.getName(), pattern.getPatternId(), logEntries.size());
             }
         }
 
