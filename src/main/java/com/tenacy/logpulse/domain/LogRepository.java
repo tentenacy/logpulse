@@ -13,8 +13,10 @@ import java.util.List;
 public interface LogRepository extends JpaRepository<LogEntry, Long> {
     List<LogEntry> findByLogLevel(String logLevel);
     List<LogEntry> findByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
+    List<LogEntry> findBySource(String source);
 
     @Modifying
     @Query("DELETE FROM LogEntry l WHERE l.createdAt < :threshold")
     int deleteLogEntriesOlderThan(@Param("threshold") LocalDateTime threshold);
+
 }
