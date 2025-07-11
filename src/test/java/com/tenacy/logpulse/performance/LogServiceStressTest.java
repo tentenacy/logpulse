@@ -2,9 +2,11 @@ package com.tenacy.logpulse.performance;
 
 import com.tenacy.logpulse.api.dto.LogEntryRequest;
 import com.tenacy.logpulse.api.dto.LogEntryResponse;
+import com.tenacy.logpulse.api.dto.LogEventDto;
 import com.tenacy.logpulse.domain.LogRepository;
+import com.tenacy.logpulse.service.IntegrationLogService;
 import com.tenacy.logpulse.service.LogService;
-import com.tenacy.logpulse.util.AsyncTestSupport;
+import com.tenacy.logpulse.util.SimpleTestSupport;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -19,6 +21,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -45,10 +48,13 @@ public class LogServiceStressTest {
     private LogService logService;
 
     @Autowired
+    private IntegrationLogService integrationLogService;
+
+    @Autowired
     private LogRepository logRepository;
 
     @Autowired
-    private AsyncTestSupport asyncTestSupport;
+    private SimpleTestSupport simpleTestSupport;
 
     private final int TOTAL_LOGS = 1000;
     private final int THREAD_COUNT = 8;
@@ -56,18 +62,18 @@ public class LogServiceStressTest {
 
     @BeforeEach
     void setUp() {
-        asyncTestSupport.cleanupBeforeTest();
+        simpleTestSupport.basicCleanup();
     }
 
     @AfterEach
     void tearDown() {
-        asyncTestSupport.ensureCleanSlate();
+        simpleTestSupport.simpleTestIsolation();
     }
 
     @Test
-    @DisplayName("로그 서비스 스트레스 테스트 - 격리된 환경에서 대량 로그 동시 저장")
+    @DisplayName("직접 경로 스트레스 테스트 - 격리된 환경에서 대량 로그 동시 저장")
     @Order(1)
-    void isolatedStressTestBulkLogCreation() throws Exception {
+    void directPathStressTestBulkLogCreation() throws Exception {
         // given
         ExecutorService executorService = Executors.newFixedThreadPool(THREAD_COUNT);
         List<CompletableFuture<Void>> futures = new ArrayList<>();
@@ -113,7 +119,7 @@ public class LogServiceStressTest {
         Duration submissionDuration = Duration.between(start, submissionEnd);
 
         // 데이터베이스 저장 완료까지 대기
-        asyncTestSupport.waitForExactProcessingComplete(TOTAL_LOGS, Duration.ofMinutes(3));
+        simpleTestSupport.waitForProcessingComplete(TOTAL_LOGS, Duration.ofMinutes(3));
 
         Instant end = Instant.now();
         Duration totalDuration = Duration.between(start, end);
@@ -137,9 +143,9 @@ public class LogServiceStressTest {
     }
 
     @Test
-    @DisplayName("로그 서비스 스트레스 테스트 - 격리된 환경에서 다양한 로그 레벨 분포")
+    @DisplayName("직접 경로 스트레스 테스트 - 격리된 환경에서 다양한 로그 레벨 분포")
     @Order(2)
-    void isolatedStressTestWithDifferentLogLevels() throws Exception {
+    void directPathStressTestWithDifferentLogLevels() throws Exception {
         // given
         ExecutorService executorService = Executors.newFixedThreadPool(THREAD_COUNT);
         List<CompletableFuture<Void>> futures = new ArrayList<>();
@@ -200,7 +206,7 @@ public class LogServiceStressTest {
         executorService.awaitTermination(2, TimeUnit.MINUTES);
 
         // 저장 완료까지 대기
-        asyncTestSupport.waitForExactProcessingComplete(TOTAL_LOGS, Duration.ofMinutes(3));
+        simpleTestSupport.waitForProcessingComplete(TOTAL_LOGS, Duration.ofMinutes(3));
 
         Instant end = Instant.now();
         Duration duration = Duration.between(start, end);
@@ -231,9 +237,9 @@ public class LogServiceStressTest {
     }
 
     @Test
-    @DisplayName("연속 스트레스 테스트 - 테스트 간 격리 검증")
+    @DisplayName("직접 경로 연속 스트레스 테스트 - 테스트 간 격리 검증")
     @Order(3)
-    void consecutiveStressTest() throws Exception {
+    void directPathConsecutiveStressTest() throws Exception {
         int[] testSizes = {200, 300, 250}; // 서로 다른 크기로 테스트
         String[] testTypes = {"TYPE_A", "TYPE_B", "TYPE_C"};
 
@@ -283,7 +289,7 @@ public class LogServiceStressTest {
             executorService.awaitTermination(1, TimeUnit.MINUTES);
 
             // 처리 완료 대기
-            asyncTestSupport.waitForExactProcessingComplete(currentTestSize, Duration.ofMinutes(2));
+            simpleTestSupport.waitForProcessingComplete(currentTestSize, Duration.ofMinutes(2));
 
             Instant end = Instant.now();
             Duration duration = Duration.between(start, end);
@@ -297,9 +303,151 @@ public class LogServiceStressTest {
 
             // 다음 테스트를 위한 완전한 정리
             if (testIndex < testSizes.length - 1) {
-                asyncTestSupport.ensureCleanSlate();
+                simpleTestSupport.simpleTestIsolation();
             }
         }
+    }
+
+    @Test
+    @DisplayName("통합 경로 스트레스 테스트 - 카프카 파이프라인을 통한 대량 로그 처리")
+    @Order(4)
+    void integrationPathStressTest() throws Exception {
+        // given
+        int totalLogs = 500; // 카프카 테스트는 더 적은 수로 시작
+        int concurrentThreads = 5;
+
+        String[] logLevels = {"ERROR", "WARN", "INFO", "DEBUG"};
+        int[] logLevelDistribution = {5, 15, 60, 20};
+
+        ExecutorService executorService = Executors.newFixedThreadPool(concurrentThreads);
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
+        AtomicInteger successCount = new AtomicInteger(0);
+
+        int logsPerThread = totalLogs / concurrentThreads;
+
+        Instant start = Instant.now();
+
+        // when - 여러 스레드에서 동시에 통합 경로로 로그 생성
+        for (int t = 0; t < concurrentThreads; t++) {
+            int threadId = t;
+            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+                try {
+                    for (int i = 0; i < logsPerThread; i++) {
+                        LogEventDto logEventDto = LogEventDto.builder()
+                                .source("integration-stress-test-" + threadId)
+                                .content("Integration stress test log #" + i + " from thread " + threadId)
+                                .logLevel(getRandomLogLevel(logLevels, logLevelDistribution))
+                                .timestamp(LocalDateTime.now())
+                                .build();
+
+                        integrationLogService.processLog(logEventDto);
+                        successCount.incrementAndGet();
+
+                        if (i > 0 && i % 50 == 0) {
+                            Thread.sleep(10); // 약간의 지연 추가
+                        }
+                    }
+                } catch (Exception e) {
+                    System.err.println("Error in thread " + threadId + ": " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }, executorService);
+
+            futures.add(future);
+        }
+
+        // 모든 작업 완료 대기
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+        executorService.shutdown();
+        executorService.awaitTermination(1, TimeUnit.MINUTES);
+
+        Instant submissionEnd = Instant.now();
+        Duration submissionDuration = Duration.between(start, submissionEnd);
+
+        // 데이터베이스 저장 완료까지 대기
+        simpleTestSupport.waitForProcessingComplete(totalLogs, Duration.ofMinutes(5));
+
+        Instant end = Instant.now();
+        Duration totalDuration = Duration.between(start, end);
+
+        // then
+        long actualLogCount = logRepository.count();
+        double submissionRate = (double) totalLogs / submissionDuration.toMillis() * 1000;
+        double totalRate = (double) actualLogCount / totalDuration.toMillis() * 1000;
+
+        System.out.println("통합 경로 스트레스 테스트 결과:");
+        System.out.println("- 총 생성된 로그 수: " + actualLogCount);
+        System.out.println("- 성공한 로그 생성 수: " + successCount.get());
+        System.out.println("- 제출 소요 시간: " + submissionDuration.toMillis() + "ms");
+        System.out.println("- 총 소요 시간: " + totalDuration.toMillis() + "ms");
+        System.out.println("- 제출 처리량: " + String.format("%.2f", submissionRate) + " logs/second");
+        System.out.println("- 전체 처리량: " + String.format("%.2f", totalRate) + " logs/second");
+
+        assertThat(successCount.get()).isEqualTo(totalLogs);
+        assertThat(actualLogCount).isGreaterThanOrEqualTo((long)(totalLogs * 0.95)); // 최소 95% 성공 기대
+    }
+
+    @Test
+    @DisplayName("직접 경로와 통합 경로 성능 비교 테스트")
+    @Order(5)
+    void compareDirectAndIntegrationPathsTest() throws Exception {
+        // 테스트 파라미터
+        int sampleSize = 100; // 각 경로별 로그 수
+
+        // 1. 직접 경로 성능 측정
+        Instant directStart = Instant.now();
+
+        for (int i = 0; i < sampleSize; i++) {
+            LogEntryRequest request = LogEntryRequest.builder()
+                    .source("performance-comparison-direct")
+                    .content("Direct path performance test log #" + i)
+                    .logLevel("INFO")
+                    .build();
+
+            logService.createLog(request);
+        }
+
+        Instant directEnd = Instant.now();
+        Duration directDuration = Duration.between(directStart, directEnd);
+        double directThroughput = (double) sampleSize / directDuration.toMillis() * 1000;
+
+        // 2. 통합 경로 성능 측정
+        Instant integrationStart = Instant.now();
+
+        for (int i = 0; i < sampleSize; i++) {
+            LogEventDto eventDto = LogEventDto.builder()
+                    .source("performance-comparison-integration")
+                    .content("Integration path performance test log #" + i)
+                    .logLevel("INFO")
+                    .timestamp(LocalDateTime.now())
+                    .build();
+
+            integrationLogService.processLog(eventDto);
+        }
+
+        Instant integrationSubmissionEnd = Instant.now();
+        Duration integrationSubmissionDuration = Duration.between(integrationStart, integrationSubmissionEnd);
+        double integrationSubmissionThroughput = (double) sampleSize / integrationSubmissionDuration.toMillis() * 1000;
+
+        // 통합 경로 처리 완료 대기
+        simpleTestSupport.waitForProcessingComplete(sampleSize * 2, Duration.ofMinutes(2));
+
+        Instant processingEnd = Instant.now();
+        Duration totalProcessingDuration = Duration.between(integrationStart, processingEnd);
+        double processingThroughput = (double) sampleSize / totalProcessingDuration.toMillis() * 1000;
+
+        // 결과 출력
+        System.out.println("== 경로별 성능 비교 ==");
+        System.out.println("직접 경로:");
+        System.out.println("- 처리 시간: " + directDuration.toMillis() + "ms");
+        System.out.println("- 처리량: " + String.format("%.2f", directThroughput) + " logs/second");
+        System.out.println("\n통합 경로:");
+        System.out.println("- 제출 시간: " + integrationSubmissionDuration.toMillis() + "ms");
+        System.out.println("- 제출 처리량: " + String.format("%.2f", integrationSubmissionThroughput) + " logs/second");
+        System.out.println("- 총 처리 시간: " + totalProcessingDuration.toMillis() + "ms");
+        System.out.println("- 총 처리량: " + String.format("%.2f", processingThroughput) + " logs/second");
+        System.out.println("\n제출 처리량 비율 (통합/직접): " +
+                String.format("%.2f", integrationSubmissionThroughput / directThroughput));
     }
 
     private LogEntryRequest createRandomLogRequest(int threadId, int logNumber) {

@@ -2,8 +2,11 @@ package com.tenacy.logpulse.service;
 
 import com.tenacy.logpulse.api.dto.LogEntryRequest;
 import com.tenacy.logpulse.api.dto.LogEntryResponse;
+import com.tenacy.logpulse.api.dto.LogEventDto;
 import com.tenacy.logpulse.domain.LogEntry;
 import com.tenacy.logpulse.domain.LogRepository;
+import com.tenacy.logpulse.elasticsearch.service.ElasticsearchService;
+import com.tenacy.logpulse.pattern.LogPatternDetector;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -27,6 +30,18 @@ public class LogServiceTest {
 
     @Mock
     private LogRepository logRepository;
+
+    @Mock
+    private ElasticsearchService elasticsearchService;
+
+    @Mock
+    private LogMetricsService logMetricsService;
+
+    @Mock
+    private LogAlertService logAlertService;
+
+    @Mock
+    private LogPatternDetector patternDetector;
 
     @InjectMocks
     private LogService logService;
@@ -67,7 +82,12 @@ public class LogServiceTest {
         assertThat(response.getSource()).isEqualTo(sampleLogEntry.getSource());
         assertThat(response.getContent()).isEqualTo(sampleLogEntry.getContent());
         assertThat(response.getLogLevel()).isEqualTo(sampleLogEntry.getLogLevel());
+
         verify(logRepository, times(1)).save(any(LogEntry.class));
+        verify(elasticsearchService, times(1)).saveLog(any(LogEntry.class));
+        verify(logMetricsService, times(1)).recordLog(any(LogEventDto.class));
+        verify(logAlertService, times(1)).checkLogForAlert(any(LogEventDto.class));
+        verify(patternDetector, times(1)).detectPatterns(any(LogEntry.class));
     }
 
     @Test
