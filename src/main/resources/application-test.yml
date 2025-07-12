@@ -46,8 +46,10 @@ logpulse:
   filter:
     min-level: DEBUG
   alert:
+    email:
+      enabled: true
     error-threshold: 3
-    error-time-window: 10000  # 10초
+    error-time-window: 10000
   elasticsearch:
     bulk-size: 100
     index-prefix: logpulse-test-

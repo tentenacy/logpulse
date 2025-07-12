@@ -3,6 +3,9 @@ spring:
     name: logpulse
   profiles:
     active: dev
+  config:
+    import:
+      - optional:file:config/application-secrets.yml
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
@@ -37,6 +40,17 @@ spring:
     listener:
       type: batch
       ack-mode: MANUAL_IMMEDIATE
+  mail:
+    host: ${mail.host}
+    port: ${mail.port}
+    username: ${mail.username}
+    password: ${mail.password}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
 server:
   port: 8080
@@ -55,8 +69,12 @@ logpulse:
     chunk-size: 100
     archive-days: 30
   alert:
+    email:
+      enabled: true
+      sender: ${mail.sender}
+      recipients: ${mail.recipients}
     error-threshold: 10
-    error-time-window: 60000  # 1분
+    error-time-window: 60000
   cleanup:
     retention-days: 90
   elasticsearch:
