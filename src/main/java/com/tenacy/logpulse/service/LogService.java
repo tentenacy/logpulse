@@ -26,7 +26,6 @@ public class LogService {
     private final LogRepository logRepository;
     private final ElasticsearchService elasticsearchService;
     private final LogMetricsService logMetricsService;
-    private final LogAlertService logAlertService;
     private final LogPatternDetector patternDetector;
 
     @Transactional
@@ -59,13 +58,6 @@ public class LogService {
             logMetricsService.recordLog(eventDto);
         } catch (Exception e) {
             log.error("Failed to record metrics: {}", e.getMessage(), e);
-        }
-
-        try {
-            // 알림 처리
-            logAlertService.checkLogForAlert(eventDto);
-        } catch (Exception e) {
-            log.error("Failed to check for alerts: {}", e.getMessage(), e);
         }
 
         // 패턴 감지 수행

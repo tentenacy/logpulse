@@ -1,10 +1,12 @@
 package com.tenacy.logpulse.config;
 
 import com.tenacy.logpulse.api.dto.LogEventDto;
+import com.tenacy.logpulse.domain.LogEntry;
 import com.tenacy.logpulse.integration.filter.LogFilter;
 import com.tenacy.logpulse.integration.router.LogRouter;
 import com.tenacy.logpulse.integration.service.LogServiceActivator;
 import com.tenacy.logpulse.integration.transformer.LogEnricher;
+import com.tenacy.logpulse.pattern.LogPatternDetector;
 import com.tenacy.logpulse.service.LogAlertService;
 import com.tenacy.logpulse.service.LogMetricsService;
 import com.tenacy.logpulse.service.LogProducerService;
@@ -35,7 +37,7 @@ public class IntegrationConfig {
 
     private final LogProducerService logProducerService;
     private final LogMetricsService logMetricsService;
-    private final LogAlertService logAlertService;
+    private final LogPatternDetector patternDetector;
 
     private final AtomicLong inputCount = new AtomicLong(0);
     private final AtomicLong errorCount = new AtomicLong(0);
@@ -170,15 +172,24 @@ public class IntegrationConfig {
     }
 
     @Bean
-    public IntegrationFlow alertFlow() {
+    public IntegrationFlow patternDetectionFlow() {
         return IntegrationFlow.from(processedLogChannel())
                 .<LogEventDto>handle((payload, headers) -> {
                     try {
-                        if (payload != null && "ERROR".equalsIgnoreCase(payload.getLogLevel())) {
-                            logAlertService.checkLogForAlert(payload);
+                        if (payload != null) {
+                            // LogEntry로 변환하여 패턴 감지 처리
+                            LogEntry logEntry = LogEntry.builder()
+                                    .source(payload.getSource())
+                                    .content(payload.getContent())
+                                    .logLevel(payload.getLogLevel())
+                                    .createdAt(payload.getTimestamp())
+                                    .build();
+
+                            // 단일 로그에 대한 패턴 감지 실행
+                            patternDetector.detectPatterns(logEntry);
                         }
                     } catch (Exception e) {
-                        log.error("Error checking alerts: {}", e.getMessage(), e);
+                        log.error("Error detecting patterns: {}", e.getMessage(), e);
                     }
                     return null;
                 })
