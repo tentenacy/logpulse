@@ -38,6 +38,9 @@ public class LogServiceTest {
     private LogMetricsService logMetricsService;
 
     @Mock
+    private RealTimeErrorMonitorService errorMonitorService;
+
+    @Mock
     private LogPatternDetector patternDetector;
 
     @InjectMocks
@@ -83,6 +86,7 @@ public class LogServiceTest {
         verify(logRepository, times(1)).save(any(LogEntry.class));
         verify(elasticsearchService, times(1)).saveLog(any(LogEntry.class));
         verify(logMetricsService, times(1)).recordLog(any(LogEventDto.class));
+        verify(errorMonitorService, times(1)).monitorLog(any(LogEventDto.class));
         verify(patternDetector, times(1)).detectPatterns(any(LogEntry.class));
     }
 

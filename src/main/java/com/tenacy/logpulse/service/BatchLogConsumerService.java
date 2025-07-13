@@ -24,6 +24,7 @@ public class BatchLogConsumerService {
     private final JdbcBatchInsertService jdbcBatchInsertService;
     private final ElasticsearchService elasticsearchService;
     private final LogMetricsService logMetricsService;
+    private final RealTimeErrorMonitorService errorMonitorService;
     private final LogPatternDetector patternDetector;
     private final ObjectMapper objectMapper;
 
@@ -45,6 +46,9 @@ public class BatchLogConsumerService {
 
                 // 메트릭 기록
                 logMetricsService.recordLog(logEventDto);
+
+                // 실시간 오류 모니터링
+                errorMonitorService.monitorLog(logEventDto);
 
                 LogEntry logEntry = LogEntry.builder()
                         .source(logEventDto.getSource())

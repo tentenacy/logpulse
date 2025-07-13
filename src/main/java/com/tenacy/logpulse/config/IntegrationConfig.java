@@ -10,6 +10,7 @@ import com.tenacy.logpulse.pattern.LogPatternDetector;
 import com.tenacy.logpulse.service.LogAlertService;
 import com.tenacy.logpulse.service.LogMetricsService;
 import com.tenacy.logpulse.service.LogProducerService;
+import com.tenacy.logpulse.service.RealTimeErrorMonitorService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -37,6 +38,7 @@ public class IntegrationConfig {
 
     private final LogProducerService logProducerService;
     private final LogMetricsService logMetricsService;
+    private final RealTimeErrorMonitorService errorMonitorService;
     private final LogPatternDetector patternDetector;
 
     private final AtomicLong inputCount = new AtomicLong(0);
@@ -172,24 +174,15 @@ public class IntegrationConfig {
     }
 
     @Bean
-    public IntegrationFlow patternDetectionFlow() {
+    public IntegrationFlow errorMonitorFlow() { // 이름 변경
         return IntegrationFlow.from(processedLogChannel())
                 .<LogEventDto>handle((payload, headers) -> {
                     try {
-                        if (payload != null) {
-                            // LogEntry로 변환하여 패턴 감지 처리
-                            LogEntry logEntry = LogEntry.builder()
-                                    .source(payload.getSource())
-                                    .content(payload.getContent())
-                                    .logLevel(payload.getLogLevel())
-                                    .createdAt(payload.getTimestamp())
-                                    .build();
-
-                            // 단일 로그에 대한 패턴 감지 실행
-                            patternDetector.detectPatterns(logEntry);
+                        if (payload != null && "ERROR".equalsIgnoreCase(payload.getLogLevel())) {
+                            errorMonitorService.monitorLog(payload);
                         }
                     } catch (Exception e) {
-                        log.error("Error detecting patterns: {}", e.getMessage(), e);
+                        log.error("Error monitoring errors: {}", e.getMessage(), e);
                     }
                     return null;
                 })

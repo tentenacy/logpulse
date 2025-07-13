@@ -26,6 +26,7 @@ public class LogService {
     private final LogRepository logRepository;
     private final ElasticsearchService elasticsearchService;
     private final LogMetricsService logMetricsService;
+    private final RealTimeErrorMonitorService errorMonitorService;
     private final LogPatternDetector patternDetector;
 
     @Transactional
@@ -58,6 +59,13 @@ public class LogService {
             logMetricsService.recordLog(eventDto);
         } catch (Exception e) {
             log.error("Failed to record metrics: {}", e.getMessage(), e);
+        }
+
+        try {
+            // 실시간 오류 모니터링
+            errorMonitorService.monitorLog(eventDto);
+        } catch (Exception e) {
+            log.error("Failed to monitor errors: {}", e.getMessage(), e);
         }
 
         // 패턴 감지 수행
