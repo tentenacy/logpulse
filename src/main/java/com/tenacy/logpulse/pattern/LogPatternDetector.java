@@ -10,79 +10,97 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 @Service
 @Slf4j
 public class LogPatternDetector {
 
-    private final Map<String, LogPattern> patterns = new ConcurrentHashMap<>();
-
+    private final List<LogPattern> patterns = new CopyOnWriteArrayList<>();
     private final AlertService alertService;
 
-    @Autowired
-    public LogPatternDetector(AlertService alertService, List<LogPattern> logPatterns) {
+    public LogPatternDetector(AlertService alertService, List<LogPattern> patternList) {
         this.alertService = alertService;
 
-        for (LogPattern pattern : logPatterns) {
-            registerPattern(pattern);
+        if (patternList != null) {
+            patterns.addAll(patternList);
+            log.info("Initialized LogPatternDetector with {} patterns", patterns.size());
         }
     }
 
+    /**
+     * 새로운 로그 항목 처리 및 패턴 감지
+     */
+    public List<PatternResult> processLog(LogEntry logEntry) {
+        List<PatternResult> detectedPatterns = new ArrayList<>();
+
+        for (LogPattern pattern : patterns) {
+            if (!pattern.isEnabled()) {
+                continue;
+            }
+
+            try {
+                PatternStatus status = pattern.processLog(logEntry);
+
+                if (status.isDetected() && status.getResult() != null) {
+                    detectedPatterns.add(status.getResult());
+
+                    // 심각도에 따라 알림 발송
+                    if (status.getResult().getSeverity().ordinal() >= PatternSeverity.WARNING.ordinal()) {
+                        sendAlert(status.getResult());
+                    }
+                }
+            } catch (Exception e) {
+                log.error("Error processing log with pattern {}: {}", pattern.getPatternId(), e.getMessage(), e);
+            }
+        }
+
+        return detectedPatterns;
+    }
+
+    /**
+     * 패턴 감지 시 알림 발송
+     */
+    private void sendAlert(PatternResult result) {
+        try {
+            String subject = "LogPulse 패턴 감지: " + result.getPatternName();
+            alertService.sendAlert(subject, result.getMessage());
+        } catch (Exception e) {
+            log.error("Failed to send alert for pattern {}: {}", result.getPatternId(), e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 패턴 등록
+     */
     public void registerPattern(LogPattern pattern) {
-        patterns.put(pattern.getPatternId(), pattern);
+        patterns.add(pattern);
+        log.info("Registered stateful pattern: {}", pattern.getPatternId());
     }
 
+    /**
+     * 패턴 제거
+     */
     public void unregisterPattern(String patternId) {
-        LogPattern removed = patterns.remove(patternId);
+        patterns.removeIf(p -> p.getPatternId().equals(patternId));
+        log.info("Unregistered stateful pattern: {}", patternId);
     }
 
-    public List<PatternResult> detectPatterns(LogEntry logEntry) {
-        List<PatternResult> results = new ArrayList<>();
-
-        for (LogPattern pattern : patterns.values()) {
-            if (pattern.isEnabled() && pattern.detect(logEntry)) {
-                PatternResult result = pattern.onDetected(logEntry, null);
-                results.add(result);
-
-                // 알림 서비스 호출
-                if (result.getSeverity().ordinal() >= PatternSeverity.WARNING.ordinal()) {
-                    alertService.sendAlert(
-                            "LogPulse 패턴 감지: " + pattern.getName(),
-                            result.getMessage()
-                    );
-                }
-            }
-        }
-
-        return results;
+    /**
+     * 모든 패턴 상태 리셋
+     */
+    public void resetAllPatterns() {
+        patterns.forEach(LogPattern::resetState);
+        log.info("Reset state for all stateful patterns");
     }
 
-    public List<PatternResult> detectBatchPatterns(List<LogEntry> logEntries) {
-        List<PatternResult> results = new ArrayList<>();
-
-        for (LogPattern pattern : patterns.values()) {
-            if (pattern.isEnabled() && pattern.detectBatch(logEntries)) {
-                PatternResult result = pattern.onDetected(null, logEntries);
-                results.add(result);
-
-                // 알림 서비스 호출
-                if (result.getSeverity().ordinal() >= PatternSeverity.WARNING.ordinal()) {
-                    alertService.sendAlert(
-                            "LogPulse 배치 패턴 감지: " + pattern.getName(),
-                            result.getMessage()
-                    );
-                }
-            }
-        }
-
-        return results;
-    }
-
-    public List<LogPattern> getAllPatterns() {
-        return new ArrayList<>(patterns.values());
-    }
-
-    public LogPattern getPattern(String patternId) {
-        return patterns.get(patternId);
+    /**
+     * 특정 패턴 상태 리셋
+     */
+    public void resetPattern(String patternId) {
+        patterns.stream()
+                .filter(p -> p.getPatternId().equals(patternId))
+                .forEach(LogPattern::resetState);
+        log.info("Reset state for pattern: {}", patternId);
     }
 }

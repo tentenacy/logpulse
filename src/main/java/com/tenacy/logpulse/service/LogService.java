@@ -69,7 +69,7 @@ public class LogService {
         }
 
         // 패턴 감지 수행
-        patternDetector.detectPatterns(savedEntry);
+        patternDetector.processLog(savedEntry);
 
         return LogEntryResponse.of(savedEntry);
     }

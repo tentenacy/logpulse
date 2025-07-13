@@ -60,6 +60,12 @@ public class BatchLogConsumerService {
 
                 logEntries.add(logEntry);
 
+                try {
+                    patternDetector.processLog(logEntry);
+                } catch (Exception e) {
+                    log.error("Error processing log with pattern detector: {}", e.getMessage(), e);
+                }
+
             } catch (JsonProcessingException e) {
                 log.error("Failed to deserialize log event: {}", message, e);
             }
@@ -73,9 +79,6 @@ public class BatchLogConsumerService {
             // Elasticsearch에 한번에 저장 (배치 처리)
             elasticsearchService.saveAll(logEntries);
             log.debug("Saved {} log entries to Elasticsearch", logEntries.size());
-
-            // 패턴 감지 수행 (배치 처리)
-            patternDetector.detectBatchPatterns(logEntries);
         }
     }
 }
