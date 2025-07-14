@@ -3,15 +3,11 @@ package com.tenacy.logpulse.api;
 import com.tenacy.logpulse.api.dto.LogEntryRequest;
 import com.tenacy.logpulse.api.dto.LogEntryResponse;
 import com.tenacy.logpulse.pattern.LogPatternDetector;
-import com.tenacy.logpulse.pattern.PatternResult;
 import com.tenacy.logpulse.service.LogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/test")
@@ -28,14 +24,12 @@ public class TestController {
     @GetMapping("/patterns/repeated-error")
     public ResponseEntity<String> testStatefulRepeatedErrorPattern(
             @RequestParam(defaultValue = "5") int count,
-            @RequestParam(defaultValue = "stateful-test") String source,
+            @RequestParam(defaultValue = "test") String source,
             @RequestParam(defaultValue = "Database connection failed") String errorMessage) {
 
         try {
             StringBuilder result = new StringBuilder();
             result.append("반복 에러 패턴 테스트 결과:\n\n");
-
-            List<PatternResult> detectedPatterns = new ArrayList<>();
 
             // 동일한 에러 메시지로 여러 개의 로그 생성
             for (int i = 0; i < count; i++) {
@@ -54,17 +48,6 @@ public class TestController {
             }
 
             result.append("\n총 ").append(count).append("개의 ERROR 로그 생성 완료\n\n");
-
-            if (!detectedPatterns.isEmpty()) {
-                result.append("감지된 패턴: ").append(detectedPatterns.size()).append("개\n");
-
-                for (PatternResult pattern : detectedPatterns) {
-                    result.append("- ").append(pattern.getPatternName())
-                            .append(": ").append(pattern.getMessage()).append("\n");
-                }
-            } else {
-                result.append("감지된 패턴 없음 (임계값이 더 높거나 패턴이 활성화되지 않았을 수 있음)\n");
-            }
 
             return ResponseEntity.ok(result.toString());
 
