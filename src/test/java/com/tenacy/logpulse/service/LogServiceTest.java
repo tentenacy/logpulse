@@ -87,7 +87,7 @@ public class LogServiceTest {
         verify(elasticsearchService, times(1)).saveLog(any(LogEntry.class));
         verify(logMetricsService, times(1)).recordLog(any(LogEventDto.class));
         verify(errorMonitorService, times(1)).monitorLog(any(LogEventDto.class));
-        verify(patternDetector, times(1)).detectPatterns(any(LogEntry.class));
+        verify(patternDetector, times(1)).processLog(any(LogEntry.class));
     }
 
     @Test
