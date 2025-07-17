@@ -5,7 +5,7 @@ spring:
     active: dev
   config:
     import:
-      - optional:file:config/application-secrets.yml
+      - optional:file:${ROOT_PATH:}/config/application-secrets.yml
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
@@ -41,10 +41,10 @@ spring:
       type: batch
       ack-mode: MANUAL_IMMEDIATE
   mail:
-    host: ${mail.host}
-    port: ${mail.port}
-    username: ${mail.username}
-    password: ${mail.password}
+    host: ${mail.host:smtp.example.com}
+    port: ${mail.port:587}
+    username: ${mail.username:username}
+    password: ${mail.password:password}
     properties:
       mail:
         smtp:
@@ -71,8 +71,8 @@ logpulse:
   alert:
     email:
       enabled: true
-      sender: ${mail.sender}
-      recipients: ${mail.recipients}
+      sender: ${mail.sender:noreply@example.com}
+      recipients: ${mail.recipients:admin@example.com}
   cleanup:
     retention-days: 90
   elasticsearch:
@@ -82,6 +82,9 @@ logpulse:
     error-time-window: 60000
 
 management:
+  health:
+    elasticsearch:
+      enabled: false
   endpoints:
     web:
       exposure:
@@ -89,6 +92,10 @@ management:
   endpoint:
     health:
       show-details: always
+      mail:
+        enabled: false
+      elasticsearch:
+        enabled: false
   metrics:
     export:
       prometheus:

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Toaster, toast } from 'react-hot-toast';
-import LogPulseDashboard from './LogPulseDashboard';
+import LogPulseDashboard from './components/LogPulseDashboard';
 import logpulseApi from './services/logpulseApi';
 
 export default function App() {

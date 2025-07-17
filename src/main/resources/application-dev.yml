@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:mysql://localhost:13306/logpulse?rewriteBatchedStatements=true
+    url: jdbc:mysql://mysql:3306/logpulse?rewriteBatchedStatements=true
     username: root
     password: 1234
     hikari:
@@ -15,7 +15,7 @@ spring:
       hibernate:
         generate_statistics: true
   kafka:
-    bootstrap-servers: localhost:19092
+    bootstrap-servers: broker:29092
     consumer:
       group-id: logpulse-group
       max-poll-records: 500
@@ -32,7 +32,7 @@ spring:
       concurrency: 5
   elasticsearch:
     rest:
-      uris: localhost:19200
+      uris: elasticsearch:9200
 
 logging:
   level:
@@ -44,7 +44,7 @@ logging:
 
 logpulse:
   collector:
-    directory: ${user.home}/logpulse/logs
+    directory: /app/logs
     file-pattern: "*.log"
   kafka:
     topics:
