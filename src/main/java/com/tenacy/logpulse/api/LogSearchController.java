@@ -1,4 +1,3 @@
-// LogSearchController.java
 package com.tenacy.logpulse.api;
 
 import com.tenacy.logpulse.api.dto.LogSearchResponse;
