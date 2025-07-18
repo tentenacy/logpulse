@@ -122,42 +122,16 @@ const logpulseApi = {
    * 로그 통계 데이터 조회
    * @returns {Promise<Object>} - 통계 데이터
    */
-  getLogStatistics: async (timeRange = 'day') => {
-    // 실제 API가 있다고 가정하고 예시 구현
-    // 백엔드에 해당 API가 없으므로 모의 데이터를 제공
+  getLogStatistics: async () => {
+    const levelStats = await fetchApi('/statistics/level');
+    const sourceStats = await fetchApi('/statistics/source');
+    const hourlyStats = await fetchApi('/statistics/hourly');
 
-    // 모의 응답 데이터
-    const mockStats = {
-      summary: {
-        total: 25647,
-        error: 324,
-        warn: 843,
-        info: 18432,
-        debug: 6048,
-        errorRate: 1.26
-      },
-      bySource: {
-        'api-service': 8765,
-        'user-service': 5432,
-        'payment-service': 4321,
-        'notification-service': 3456,
-        'auth-service': 3673
-      },
-      byHour: [
-        { hour: 0, count: 876, error: 12 },
-        { hour: 1, count: 543, error: 8 },
-        // ... 더 많은 시간별 데이터
-        { hour: 23, count: 986, error: 15 }
-      ]
+    return {
+      levelStats,
+      sourceStats,
+      hourlyStats
     };
-
-    // 실제 구현에서는 아래 주석을 해제하고 실제 API를 호출
-    // return fetchApi(`/logs/statistics?timeRange=${timeRange}`);
-
-    // 모의 데이터 반환 (지연 시뮬레이션)
-    return new Promise((resolve) => {
-      setTimeout(() => resolve(mockStats), 500);
-    });
   },
 
   /**
@@ -177,19 +151,7 @@ const logpulseApi = {
    * @returns {Promise<Object>} - 시스템 상태 정보
    */
   getSystemStatus: async () => {
-    // 모의 시스템 상태 정보
-    return new Promise((resolve) => {
-      setTimeout(() => resolve({
-        processedRate: 16542,
-        errorRate: 1.2,
-        avgResponseTime: 85,
-        uptime: '12d 4h 32m',
-        activeConnections: 23,
-        cpuUsage: 38.5,
-        memoryUsage: 42.7,
-        diskUsage: 68.3
-      }), 300);
-    });
+    return fetchApi('/system/status');
   }
 };
 

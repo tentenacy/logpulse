@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import logpulseApi from '../services/logpulseApi';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell
@@ -32,28 +33,41 @@ export default function LogPulseDashboard() {
   });
   const [processingHistory, setProcessingHistory] = useState([]);
 
-  // 모의 데이터 생성 및 로딩
   useEffect(() => {
     setIsLoading(true);
 
-    // 모의 로그 데이터 생성
-    const mockLogs = generateMockLogs(100);
-    const mockStats = calculateLogStats(mockLogs);
-    const mockProcessingHistory = generateProcessingHistory();
+    // API 호출을 통한 데이터 로드
+    const fetchData = async () => {
+      try {
+        // 로그 데이터 로드
+        const logsResponse = await logpulseApi.getLogs();
+        setLogs(logsResponse);
 
-    // 로딩 시뮬레이션
-    setTimeout(() => {
-      setLogs(mockLogs);
-      setLogStats(mockStats);
-      setSystemStats({
-        processedRate: 16542,
-        errorRate: 1.2,
-        avgResponseTime: 85,
-        uptime: '12d 4h 32m'
-      });
-      setProcessingHistory(mockProcessingHistory);
-      setIsLoading(false);
-    }, 1000);
+        // 통계 데이터 로드
+        const statistics = await logpulseApi.getLogStatistics();
+        setLogStats({
+          error: statistics.levelStats.ERROR || 0,
+          warn: statistics.levelStats.WARN || 0,
+          info: statistics.levelStats.INFO || 0,
+          debug: statistics.levelStats.DEBUG || 0,
+          total: logsResponse.length
+        });
+
+        // 시간별 처리 이력
+        setProcessingHistory(statistics.hourlyStats);
+
+        // 시스템 상태 정보
+        const systemStatus = await logpulseApi.getSystemStatus();
+        setSystemStats(systemStatus);
+
+        setIsLoading(false);
+      } catch (error) {
+        console.error("데이터 로드 중 오류 발생:", error);
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
   }, [timeRangeFilter]);
 
   // 로그 통계 계산
@@ -74,16 +88,46 @@ export default function LogPulseDashboard() {
   };
 
   // 필터링된 로그 가져오기
-  const getFilteredLogs = () => {
-    return logs.filter(log => {
-      const sourceMatch = sourceFilter === 'all' || log.source === sourceFilter;
-      const levelMatch = levelFilter === 'all' || log.logLevel === levelFilter;
-      const searchMatch = searchQuery === '' ||
-        log.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        log.source.toLowerCase().includes(searchQuery.toLowerCase());
+  const fetchFilteredLogs = async () => {
+    setIsLoading(true);
 
-      return sourceMatch && levelMatch && searchMatch;
-    });
+    try {
+      let filteredLogs;
+
+      if (levelFilter !== 'all' && sourceFilter !== 'all') {
+        // 레벨과 소스 모두로 필터링
+        const logs = await logpulseApi.searchLogs({
+          level: levelFilter,
+          source: sourceFilter
+        });
+        filteredLogs = logs;
+      } else if (levelFilter !== 'all') {
+        // 레벨로만 필터링
+        filteredLogs = await logpulseApi.searchByLogLevel(levelFilter);
+      } else if (sourceFilter !== 'all') {
+        // 소스로만 필터링
+        filteredLogs = await logpulseApi.searchBySource(sourceFilter);
+      } else {
+        // 필터 없음
+        filteredLogs = await logpulseApi.getLogs();
+      }
+
+      // 검색어 필터링 (클라이언트 측에서 수행)
+      if (searchQuery) {
+        filteredLogs = filteredLogs.filter(log =>
+          log.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          log.source.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+      }
+
+      setLogs(filteredLogs);
+    } catch (error) {
+      console.error("로그 필터링 중 오류 발생:", error);
+      // 오류 시 빈 배열 설정
+      setLogs([]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // 로그 상세 정보 표시
@@ -163,7 +207,7 @@ export default function LogPulseDashboard() {
 
   // 로그 다운로드
   const downloadLogs = () => {
-    const filteredLogs = getFilteredLogs();
+    const filteredLogs = fetchFilteredLogs();
     const csvContent = "data:text/csv;charset=utf-8,"
       + "ID,Timestamp,Source,Level,Content,IP,User\n"
       + filteredLogs.map(log =>
@@ -521,7 +565,7 @@ export default function LogPulseDashboard() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {getFilteredLogs().map((log) => (
+                  {fetchFilteredLogs().map((log) => (
                     <tr key={log.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => showLogDetail(log)}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {log.timestamp.toLocaleString()}
@@ -540,7 +584,7 @@ export default function LogPulseDashboard() {
                     </tr>
                   ))}
 
-                  {getFilteredLogs().length === 0 && (
+                  {fetchFilteredLogs().length === 0 && (
                     <tr>
                       <td colSpan="4" className="px-6 py-4 text-sm text-center text-gray-500">
                         No logs found matching your filters
@@ -554,7 +598,7 @@ export default function LogPulseDashboard() {
             {/* 페이지네이션 (간단 버전) */}
             <div className="px-6 py-3 flex items-center justify-between border-t border-gray-200">
               <div className="text-sm text-gray-700">
-                Showing <span className="font-medium">{getFilteredLogs().length}</span> logs
+                Showing <span className="font-medium">{fetchFilteredLogs().length}</span> logs
               </div>
 
               <div className="flex-1 flex justify-center md:justify-end">
