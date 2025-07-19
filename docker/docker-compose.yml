@@ -39,6 +39,7 @@ services:
       - "8080:8080"
     volumes:
       - ../config:/app/config
+      - logs-data:/app/logs
     environment:
       - ROOT_PATH=/app
       - SPRING_PROFILES_ACTIVE=dev
@@ -62,6 +63,19 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+
+  log-generator:
+    build:
+      context: ../scripts
+      dockerfile: Dockerfile.log-generator
+    container_name: log-generator
+    volumes:
+      - logs-data:/app/logs
+    depends_on:
+      - app
+    networks:
+      - logpulse-network
+    restart: "no"
 
   frontend:
     build:
@@ -260,3 +274,4 @@ volumes:
   es-data:
   prometheus-data:
   grafana-data:
+  logs-data:
