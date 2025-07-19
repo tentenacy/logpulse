@@ -70,6 +70,25 @@ export default function LogPulseDashboard() {
     fetchData();
   }, [timeRangeFilter]);
 
+  const convertTimestamp = (timestamp) => {
+    // 이미 Date 객체면 그대로 사용
+    if (timestamp instanceof Date) return timestamp;
+
+    // 배열 형태면 [year, month, day, hour, minute, second, nanosecond]를 Date로 변환
+    if (Array.isArray(timestamp) && timestamp.length >= 6) {
+      const [year, month, day, hour, minute, second, nano = 0] = timestamp;
+      return new Date(year, month - 1, day, hour, minute, second, Math.floor(nano / 1000000));
+    }
+
+    // 문자열이면 Date로 파싱
+    if (typeof timestamp === 'string') {
+      return new Date(timestamp);
+    }
+
+    // 그 외의 경우 현재 시간 반환
+    return new Date();
+  };
+
   // 로그 통계 계산
   const calculateLogStats = (logData) => {
     const stats = { error: 0, warn: 0, info: 0, debug: 0, total: logData.length };
@@ -207,11 +226,11 @@ export default function LogPulseDashboard() {
 
   // 로그 다운로드
   const downloadLogs = () => {
-    const filteredLogs = fetchFilteredLogs();
+    const filteredLogs = logs;
     const csvContent = "data:text/csv;charset=utf-8,"
       + "ID,Timestamp,Source,Level,Content,IP,User\n"
       + filteredLogs.map(log =>
-          `${log.id},${log.timestamp.toISOString()},${log.source},${log.logLevel},"${log.content}",${log.ip},${log.user || ""}`)
+          `${log.id},${convertTimestamp(log.timestamp).toISOString()},${log.source},${log.logLevel},"${log.content}",${log.ip},${log.user || ""}`)
             .join("\n");
 
     const encodedUri = encodeURI(csvContent);
@@ -466,7 +485,7 @@ export default function LogPulseDashboard() {
                         {logs.filter(log => log.logLevel === 'ERROR').slice(0, 5).map((log) => (
                           <tr key={log.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => showLogDetail(log)}>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {log.timestamp.toLocaleString()}
+                              {convertTimestamp(log.timestamp).toLocaleString()}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                               {log.source}
@@ -565,10 +584,10 @@ export default function LogPulseDashboard() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {fetchFilteredLogs().map((log) => (
+                  {logs.map((log) => (
                     <tr key={log.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => showLogDetail(log)}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {log.timestamp.toLocaleString()}
+                        {convertTimestamp(log.timestamp).toLocaleString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {log.source}
@@ -584,7 +603,7 @@ export default function LogPulseDashboard() {
                     </tr>
                   ))}
 
-                  {fetchFilteredLogs().length === 0 && (
+                  {logs.length === 0 && (
                     <tr>
                       <td colSpan="4" className="px-6 py-4 text-sm text-center text-gray-500">
                         No logs found matching your filters
@@ -598,7 +617,7 @@ export default function LogPulseDashboard() {
             {/* 페이지네이션 (간단 버전) */}
             <div className="px-6 py-3 flex items-center justify-between border-t border-gray-200">
               <div className="text-sm text-gray-700">
-                Showing <span className="font-medium">{fetchFilteredLogs().length}</span> logs
+                Showing <span className="font-medium">{logs.length}</span> logs
               </div>
 
               <div className="flex-1 flex justify-center md:justify-end">
@@ -768,7 +787,7 @@ export default function LogPulseDashboard() {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-500">Timestamp</p>
-                  <p className="mt-1 text-sm text-gray-900">{selectedLog.timestamp.toLocaleString()}</p>
+                  <p className="mt-1 text-sm text-gray-900">{convertTimestamp(selectedLog.timestamp).toLocaleString()}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-500">Source</p>
@@ -819,7 +838,7 @@ export default function LogPulseDashboard() {
                         .map(log => (
                           <tr key={log.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => setSelectedLog(log)}>
                             <td className="px-4 py-2 whitespace-nowrap text-xs text-gray-500">
-                              {log.timestamp.toLocaleString()}
+                              {convertTimestamp(log.timestamp).toLocaleString()}
                             </td>
                             <td className="px-4 py-2 whitespace-nowrap">
                               <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getLogLevelBg(log.logLevel)}`}>
