@@ -1,0 +1,11 @@
+# Docker 환경
+logpulse:
+  mysql:
+    host: mysql
+    port: 3306
+  kafka:
+    host: broker
+    port: 29092
+  elasticsearch:
+    host: elasticsearch
+    port: 9200

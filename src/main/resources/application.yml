@@ -5,8 +5,10 @@ spring:
     active: dev
   config:
     import:
-      - optional:file:${ROOT_PATH:}/config/application-secrets.yml
+      - classpath:secrets.yml
+      - classpath:env-${APP_ENVIRONMENT:docker}.yml
   datasource:
+    url: jdbc:mysql://${logpulse.mysql.host}:${logpulse.mysql.port}/logpulse?rewriteBatchedStatements=true
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       pool-name: LogPulseHikariPool
@@ -29,6 +31,7 @@ spring:
       mode: always
       platform: mysql
   kafka:
+    bootstrap-servers: ${logpulse.kafka.host}:${logpulse.kafka.port}
     consumer:
       auto-offset-reset: earliest
       enable-auto-commit: false
@@ -52,6 +55,7 @@ spring:
           starttls:
             enable: true
   elasticsearch:
+    uris: http://${logpulse.elasticsearch.host}:${logpulse.elasticsearch.port}
     rest:
       connection-timeout: 500
       read-timeout: 1000
