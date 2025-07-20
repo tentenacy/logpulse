@@ -31,8 +31,9 @@ spring:
     listener:
       concurrency: 5
   elasticsearch:
-    rest:
-      uris: elasticsearch:9200
+    uris: http://elasticsearch:9200
+    username:
+    password:
 
 logging:
   level:

@@ -44,54 +44,143 @@ async function fetchApi(endpoint, options = {}) {
 }
 
 /**
+ * 쿼리 파라미터 생성 유틸리티 함수
+ * @param {Object} params - 파라미터 객체
+ * @returns {string} - 쿼리 문자열
+ */
+function buildQueryParams(params) {
+  const queryParams = new URLSearchParams();
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      queryParams.append(key, value);
+    }
+  });
+
+  const queryString = queryParams.toString();
+  return queryString ? `?${queryString}` : '';
+}
+
+/**
  * LogPulse API 클라이언트
  */
 const logpulseApi = {
   /**
-   * 로그 엔트리 목록 조회
-   * @param {Object} params - 필터 파라미터
-   * @returns {Promise<Array>} - 로그 엔트리 배열
+   * 대시보드 통합 통계 정보 조회
+   * @param {Object} params - 조회 파라미터 (start, end, source)
+   * @returns {Promise<Object>} - 통합 통계 데이터
    */
-  getLogs: async (params = {}) => {
-    let endpoint = '/logs';
-    const queryParams = new URLSearchParams();
-
-    // 필터 파라미터 적용
-    if (params.level) {
-      endpoint = `/logs/level/${params.level}`;
-    } else if (params.start && params.end) {
-      queryParams.append('start', params.start);
-      queryParams.append('end', params.end);
-      endpoint = `/logs/period?${queryParams.toString()}`;
-    }
-
-    return fetchApi(endpoint);
+  getDashboardStats: async (params = {}) => {
+    const queryString = buildQueryParams(params);
+    return fetchApi(`/dashboard/stats${queryString}`);
   },
 
   /**
-   * 로그 검색 API
-   * @param {Object} searchParams - 검색 파라미터
-   * @returns {Promise<Array>} - 검색 결과 배열
+   * 로그 레벨별 카운트 정보 조회
+   * @param {Object} params - 조회 파라미터 (start, end, source)
+   * @returns {Promise<Object>} - 로그 레벨별 카운트
+   */
+  getLogCounts: async (params = {}) => {
+    const queryString = buildQueryParams(params);
+    return fetchApi(`/dashboard/log-counts${queryString}`);
+  },
+
+  /**
+   * 시간별 로그 통계 조회
+   * @param {string} date - 조회할 날짜 (ISO 형식)
+   * @returns {Promise<Object>} - 시간별 로그 통계
+   */
+  getHourlyStats: async (date) => {
+    const queryString = date ? `?date=${date}` : '';
+    return fetchApi(`/dashboard/hourly-stats${queryString}`);
+  },
+
+  /**
+   * 소스별 로그 통계 조회
+   * @param {Object} params - 조회 파라미터 (start, end)
+   * @returns {Promise<Object>} - 소스별 로그 통계
+   */
+  getSourceStats: async (params = {}) => {
+    const queryString = buildQueryParams(params);
+    return fetchApi(`/dashboard/source-stats${queryString}`);
+  },
+
+  /**
+   * 소스별 로그 레벨 통계 조회
+   * @param {Object} params - 조회 파라미터 (start, end)
+   * @returns {Promise<Object>} - 소스별 로그 레벨 통계
+   */
+  getSourceLevelStats: async (params = {}) => {
+    const queryString = buildQueryParams(params);
+    return fetchApi(`/dashboard/source-level-stats${queryString}`);
+  },
+
+  /**
+   * 시스템 상태 정보 조회
+   * @returns {Promise<Object>} - 시스템 상태 정보
+   */
+  getSystemStatus: async () => {
+    return fetchApi('/dashboard/system-status');
+  },
+
+  /**
+   * 최근 오류 로그 목록 조회
+   * @returns {Promise<Object>} - 최근 오류 로그 목록
+   */
+  getRecentErrors: async () => {
+    return fetchApi('/dashboard/recent-errors');
+  },
+
+  /**
+   * 오류 추세 정보 조회
+   * @param {Object} params - 조회 파라미터 (start, end)
+   * @returns {Promise<Object>} - 오류 추세 정보
+   */
+  getErrorTrends: async (params = {}) => {
+    const queryString = buildQueryParams(params);
+    return fetchApi(`/dashboard/error-trends${queryString}`);
+  },
+
+  /**
+   * 페이징된 로그 엔트리 목록 조회
+   * @param {Object} params - 필터 및 페이징 파라미터
+   * @returns {Promise<Object>} - 페이징된 로그 응답
+   */
+  getLogs: async (params = {}) => {
+    const queryString = buildQueryParams({
+      page: params.page,
+      size: params.size,
+      sortBy: params.sortBy || 'createdAt',
+      sortDir: params.sortDir || 'desc',
+      level: params.level,
+      source: params.source,
+      start: params.start,
+      end: params.end
+    });
+
+    return fetchApi(`/logs${queryString}`);
+  },
+
+  /**
+   * 로그 검색 API (페이징 지원)
+   * @param {Object} searchParams - 검색 및 페이징 파라미터
+   * @returns {Promise<Object>} - 페이징된 검색 결과
    */
   searchLogs: async (searchParams = {}) => {
-    let endpoint = '/logs/search';
+    const queryString = buildQueryParams({
+      page: searchParams.page,
+      size: searchParams.size,
+      sortBy: searchParams.sortBy || 'timestamp',
+      sortDir: searchParams.sortDir || 'desc',
+      keyword: searchParams.keyword,
+      level: searchParams.level,
+      source: searchParams.source,
+      content: searchParams.content,
+      start: searchParams.start,
+      end: searchParams.end
+    });
 
-    if (searchParams.level) {
-      endpoint = `/logs/search/level/${searchParams.level}`;
-    } else if (searchParams.source) {
-      endpoint = `/logs/search/source?source=${encodeURIComponent(searchParams.source)}`;
-    } else if (searchParams.content) {
-      endpoint = `/logs/search/content?content=${encodeURIComponent(searchParams.content)}`;
-    } else if (searchParams.keyword) {
-      endpoint = `/logs/search/keyword?keyword=${encodeURIComponent(searchParams.keyword)}`;
-    } else if (searchParams.start && searchParams.end) {
-      const queryParams = new URLSearchParams();
-      queryParams.append('start', searchParams.start);
-      queryParams.append('end', searchParams.end);
-      endpoint = `/logs/search/period?${queryParams.toString()}`;
-    }
-
-    return fetchApi(endpoint);
+    return fetchApi(`/logs/search${queryString}`);
   },
 
   /**
@@ -104,54 +193,6 @@ const logpulseApi = {
       method: 'POST',
       body: JSON.stringify(logData)
     });
-  },
-
-  /**
-   * 통합 로그 이벤트 제출
-   * @param {Object} logEvent - 로그 이벤트 데이터
-   * @returns {Promise<Object>} - 응답 결과
-   */
-  submitLogEvent: async (logEvent) => {
-    return fetchApi('/logs/integration', {
-      method: 'POST',
-      body: JSON.stringify(logEvent)
-    });
-  },
-
-  /**
-   * 로그 통계 데이터 조회
-   * @returns {Promise<Object>} - 통계 데이터
-   */
-  getLogStatistics: async () => {
-    const levelStats = await fetchApi('/statistics/level');
-    const sourceStats = await fetchApi('/statistics/source');
-    const hourlyStats = await fetchApi('/statistics/hourly');
-
-    return {
-      levelStats,
-      sourceStats,
-      hourlyStats
-    };
-  },
-
-  /**
-   * 성능 테스트 실행
-   * @param {Object} testParams - 테스트 매개변수
-   * @returns {Promise<Object>} - 테스트 결과
-   */
-  runPerformanceTest: async (testParams) => {
-    return fetchApi('/performance/test', {
-      method: 'POST',
-      body: JSON.stringify(testParams)
-    });
-  },
-
-  /**
-   * 시스템 상태 조회
-   * @returns {Promise<Object>} - 시스템 상태 정보
-   */
-  getSystemStatus: async () => {
-    return fetchApi('/system/status');
   }
 };
 

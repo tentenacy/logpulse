@@ -15,6 +15,8 @@ import org.springframework.data.elasticsearch.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -29,75 +31,182 @@ public class ElasticsearchService {
     @Value("${logpulse.elasticsearch.bulk-size:1000}")
     private int bulkSize;
 
-    public void saveLog(LogEntry logEntry) {
-        LogDocument logDocument = LogDocument.of(logEntry);
-        logDocumentRepository.save(logDocument);
-        log.debug("Saved log to Elasticsearch: {}", logDocument);
+    @Value("${logpulse.elasticsearch.enabled:true}")
+    private boolean elasticsearchEnabled;
+
+    private boolean elasticsearchAvailable = true;
+
+    public boolean isAvailable() {
+        if (!elasticsearchEnabled) {
+            return false;
+        }
+
+        if (!elasticsearchAvailable) {
+            try {
+                // 간단한 검색으로 Elasticsearch 연결 확인
+                elasticsearchOperations.count(NativeQuery.builder().build(), LogDocument.class);
+                elasticsearchAvailable = true;
+                log.info("Elasticsearch connection restored");
+            } catch (Exception e) {
+                log.warn("Elasticsearch is still not available: {}", e.getMessage());
+                return false;
+            }
+        }
+
+        return true;
     }
 
-    public void saveAll(List<LogEntry> logEntries) {
-        if (logEntries == null || logEntries.isEmpty()) {
+    public void saveLog(LogEntry logEntry) {
+        if (!isAvailable()) {
+            log.debug("Elasticsearch is not available. Skipping save operation for log: {}", logEntry.getId());
             return;
         }
 
-        // 벌크 처리를 위해 청크로 분할
-        int totalSize = logEntries.size();
-
-        // bulkSize가 0이거나 음수인 경우 기본값 사용
-        int effectiveBulkSize = (bulkSize <= 0) ? 1000 : bulkSize;
-
-        // 청크 개수 계산 (0으로 나누기 방지)
-        int chunkCount = (totalSize + effectiveBulkSize - 1) / effectiveBulkSize;
-
-        for (int i = 0; i < chunkCount; i++) {
-            int fromIndex = i * effectiveBulkSize;
-            int toIndex = Math.min(fromIndex + effectiveBulkSize, totalSize);
-
-            List<LogDocument> chunk = logEntries.subList(fromIndex, toIndex).stream()
-                    .map(LogDocument::of)
-                    .collect(Collectors.toList());
-
-            logDocumentRepository.saveAll(chunk);
-            log.debug("Saved chunk of {} logs to Elasticsearch (chunk {}/{})",
-                    chunk.size(), i+1, chunkCount);
+        try {
+            LogDocument logDocument = LogDocument.of(logEntry);
+            logDocumentRepository.save(logDocument);
+            log.debug("Saved log to Elasticsearch: {}", logDocument);
+        } catch (Exception e) {
+            log.error("Failed to save log to Elasticsearch: {}", e.getMessage());
+            elasticsearchAvailable = false;
         }
     }
 
-    // 기존 메소드들 유지
+    public void saveAll(List<LogEntry> logEntries) {
+        if (!isAvailable() || logEntries == null || logEntries.isEmpty()) {
+            return;
+        }
+
+        try {
+            // 벌크 처리를 위해 청크로 분할
+            int totalSize = logEntries.size();
+            int effectiveBulkSize = (bulkSize <= 0) ? 1000 : bulkSize;
+            int chunkCount = (totalSize + effectiveBulkSize - 1) / effectiveBulkSize;
+
+            for (int i = 0; i < chunkCount; i++) {
+                int fromIndex = i * effectiveBulkSize;
+                int toIndex = Math.min(fromIndex + effectiveBulkSize, totalSize);
+
+                List<LogDocument> chunk = logEntries.subList(fromIndex, toIndex).stream()
+                        .map(LogDocument::of)
+                        .collect(Collectors.toList());
+
+                logDocumentRepository.saveAll(chunk);
+                log.debug("Saved chunk of {} logs to Elasticsearch (chunk {}/{})",
+                        chunk.size(), i+1, chunkCount);
+            }
+        } catch (Exception e) {
+            log.error("Failed to save logs to Elasticsearch in bulk: {}", e.getMessage());
+            elasticsearchAvailable = false;
+        }
+    }
+
+    public List<LogDocument> findAll() {
+        if (!isAvailable()) {
+            log.debug("Elasticsearch is not available. Returning empty result for findAll");
+            return Collections.emptyList();
+        }
+
+        try {
+            List<LogDocument> result = new ArrayList<>();
+            logDocumentRepository.findAll().forEach(result::add);
+            return result;
+        } catch (Exception e) {
+            log.error("Error finding all logs from Elasticsearch: {}", e.getMessage());
+            elasticsearchAvailable = false;
+            return Collections.emptyList();
+        }
+    }
+
     public List<LogDocument> findByLogLevel(String logLevel) {
-        return logDocumentRepository.findByLogLevel(logLevel);
+        if (!isAvailable()) {
+            log.debug("Elasticsearch is not available. Returning empty result for level: {}", logLevel);
+            return Collections.emptyList();
+        }
+
+        try {
+            return logDocumentRepository.findByLogLevel(logLevel);
+        } catch (Exception e) {
+            log.error("Error finding logs by level from Elasticsearch: {}", e.getMessage());
+            elasticsearchAvailable = false;
+            return Collections.emptyList();
+        }
     }
 
     public List<LogDocument> findBySourceContaining(String source) {
-        return logDocumentRepository.findBySourceContaining(source);
+        if (!isAvailable()) {
+            log.debug("Elasticsearch is not available. Returning empty result for source: {}", source);
+            return Collections.emptyList();
+        }
+
+        try {
+            return logDocumentRepository.findBySourceContaining(source);
+        } catch (Exception e) {
+            log.error("Error finding logs by source from Elasticsearch: {}", e.getMessage());
+            elasticsearchAvailable = false;
+            return Collections.emptyList();
+        }
     }
 
     public List<LogDocument> findByContentContaining(String content) {
-        return logDocumentRepository.findByContentContaining(content);
+        if (!isAvailable()) {
+            log.debug("Elasticsearch is not available. Returning empty result for content: {}", content);
+            return Collections.emptyList();
+        }
+
+        try {
+            return logDocumentRepository.findByContentContaining(content);
+        } catch (Exception e) {
+            log.error("Error finding logs by content from Elasticsearch: {}", e.getMessage());
+            elasticsearchAvailable = false;
+            return Collections.emptyList();
+        }
     }
 
     public List<LogDocument> findByTimestampBetween(LocalDateTime start, LocalDateTime end) {
-        return logDocumentRepository.findByTimestampBetween(start, end);
+        if (!isAvailable()) {
+            log.debug("Elasticsearch is not available. Returning empty result for period: {} to {}", start, end);
+            return Collections.emptyList();
+        }
+
+        try {
+            return logDocumentRepository.findByTimestampBetween(start, end);
+        } catch (Exception e) {
+            log.error("Error finding logs by timestamp range from Elasticsearch: {}", e.getMessage());
+            elasticsearchAvailable = false;
+            return Collections.emptyList();
+        }
     }
 
     public List<LogDocument> searchByKeyword(String keyword) {
-        Query searchQuery = NativeQuery.builder()
-                .withQuery(q -> q.multiMatch(m -> m
-                        .query(keyword)
-                        .fields("content", "source")))
-                .withPageable(PageRequest.of(0, 20))
-                .build();
+        if (!isAvailable()) {
+            log.debug("Elasticsearch is not available. Returning empty result for keyword: {}", keyword);
+            return Collections.emptyList();
+        }
 
-        SearchHits<LogDocument> searchHits = elasticsearchOperations.search(searchQuery, LogDocument.class);
+        try {
+            // 개선된 검색 쿼리
+            Query searchQuery = NativeQuery.builder()
+                    .withQuery(q -> q.bool(b -> b
+                            .should(s -> s.match(m -> m
+                                    .field("content")
+                                    .query(keyword)))
+                            .should(s -> s.match(m -> m
+                                    .field("content.ngram")
+                                    .query(keyword)))
+                            .minimumShouldMatch("1")))
+                    .withPageable(PageRequest.of(0, 100))
+                    .build();
 
-        return searchHits.getSearchHits().stream()
-                .map(SearchHit::getContent)
-                .collect(Collectors.toList());
-    }
+            SearchHits<LogDocument> searchHits = elasticsearchOperations.search(searchQuery, LogDocument.class);
 
-    // Elasticsearch 인덱스 최적화
-    public void optimizeIndex() {
-        log.info("Optimizing Elasticsearch index for logs");
-        // 실제 구현은 ElasticsearchOperations를 사용하여 구현
+            return searchHits.getSearchHits().stream()
+                    .map(SearchHit::getContent)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            log.error("Error searching logs by keyword from Elasticsearch: {}", e.getMessage());
+            elasticsearchAvailable = false;
+            return Collections.emptyList();
+        }
     }
 }

@@ -51,6 +51,13 @@ spring:
           auth: true
           starttls:
             enable: true
+  elasticsearch:
+    rest:
+      connection-timeout: 500
+      read-timeout: 1000
+      connection-retry-timeout: 500
+    connection-timeout: 1000
+    socket-timeout: 1000
 
 server:
   port: 8080
@@ -76,6 +83,7 @@ logpulse:
   cleanup:
     retention-days: 90
   elasticsearch:
+    enabled: true
     bulk-size: 1000
   monitor:
     error-threshold: 10

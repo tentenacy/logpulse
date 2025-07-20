@@ -10,11 +10,15 @@ import org.springframework.data.elasticsearch.annotations.DateFormat;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 import org.springframework.data.elasticsearch.annotations.FieldType;
+import org.springframework.data.elasticsearch.annotations.Setting;
+import org.springframework.data.elasticsearch.annotations.MultiField;
+import org.springframework.data.elasticsearch.annotations.InnerField;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Document(indexName = "logs")
+@Setting(settingPath = "elasticsearch/settings.json")
 @Data
 @Builder
 @NoArgsConstructor
@@ -27,7 +31,16 @@ public class LogDocument {
     @Field(type = FieldType.Keyword)
     private String source;
 
-    @Field(type = FieldType.Text)
+    @MultiField(
+            mainField = @Field(type = FieldType.Text, analyzer = "standard"),
+            otherFields = {
+                    @InnerField(
+                            suffix = "ngram",
+                            type = FieldType.Text,
+                            analyzer = "path_analyzer"
+                    )
+            }
+    )
     private String content;
 
     @Field(type = FieldType.Keyword)

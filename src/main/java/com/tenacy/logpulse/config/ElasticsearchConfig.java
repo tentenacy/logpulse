@@ -18,42 +18,51 @@ import org.springframework.data.elasticsearch.core.convert.MappingElasticsearchC
 import org.springframework.data.elasticsearch.core.mapping.SimpleElasticsearchMappingContext;
 import org.springframework.data.elasticsearch.repository.config.EnableElasticsearchRepositories;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+
 @Configuration
 @EnableElasticsearchRepositories(basePackages = "com.tenacy.logpulse.elasticsearch.repository")
 public class ElasticsearchConfig {
 
-    @Value("${spring.elasticsearch.rest.uris}")
+    @Value("${spring.elasticsearch.uris:http://elasticsearch:9200}")
     private String elasticsearchUri;
 
-    @Value("${logpulse.elasticsearch.socket-timeout:30000}")
+    @Value("${spring.elasticsearch.socket-timeout:30000}")
     private int socketTimeout;
 
-    @Value("${logpulse.elasticsearch.connect-timeout:5000}")
+    @Value("${spring.elasticsearch.connection-timeout:5000}")
     private int connectTimeout;
 
     @Bean
     public RestClient restClient() {
-        String[] hostAndPort = elasticsearchUri.split(":");
-        String host = hostAndPort[0];
-        int port = Integer.parseInt(hostAndPort[1]);
+        try {
+            // URI를 적절히 파싱
+            URI uri = new URI(elasticsearchUri);
+            String host = uri.getHost();
+            int port = uri.getPort() > 0 ? uri.getPort() : 9200;
+            String scheme = uri.getScheme() != null ? uri.getScheme() : "http";
 
-        RestClientBuilder builder = RestClient.builder(
-                new HttpHost(host, port)
-        );
+            RestClientBuilder builder = RestClient.builder(
+                    new HttpHost(host, port, scheme)
+            );
 
-        // 타임아웃 설정
-        builder.setRequestConfigCallback(
-                (RequestConfig.Builder requestConfigBuilder) -> requestConfigBuilder
-                        .setSocketTimeout(socketTimeout)
-                        .setConnectTimeout(connectTimeout)
-        );
+            // 타임아웃 설정
+            builder.setRequestConfigCallback(
+                    (RequestConfig.Builder requestConfigBuilder) -> requestConfigBuilder
+                            .setSocketTimeout(socketTimeout)
+                            .setConnectTimeout(connectTimeout)
+            );
 
-        // 대량 처리를 위한 커넥션 풀 설정
-        builder.setHttpClientConfigCallback(httpClientBuilder ->
-                httpClientBuilder.setMaxConnTotal(100)
-                        .setMaxConnPerRoute(30));
+            // 대량 처리를 위한 커넥션 풀 설정
+            builder.setHttpClientConfigCallback(httpClientBuilder ->
+                    httpClientBuilder.setMaxConnTotal(100)
+                            .setMaxConnPerRoute(30));
 
-        return builder.build();
+            return builder.build();
+        } catch (URISyntaxException e) {
+            throw new RuntimeException("Invalid Elasticsearch URI: " + elasticsearchUri, e);
+        }
     }
 
     @Bean

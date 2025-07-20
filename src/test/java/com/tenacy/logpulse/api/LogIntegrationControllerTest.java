@@ -81,7 +81,7 @@ public class LogIntegrationControllerTest {
         testSupport.waitForProcessingComplete(1, Duration.ofSeconds(10));
 
         // then
-        List<LogEntry> logs = logRepository.findBySource("integration-test-service");
+        List<LogEntry> logs = logRepository.findBySourceContaining("integration-test-service");
         assertThat(logs).hasSize(1);
         assertThat(logs.get(0).getContent()).isEqualTo("Integration API test log message");
         assertThat(logs.get(0).getLogLevel()).isEqualTo("INFO");
@@ -114,7 +114,7 @@ public class LogIntegrationControllerTest {
         testSupport.waitForProcessingComplete(initialCount + batchSize, Duration.ofSeconds(30));
 
         // then
-        List<LogEntry> logs = logRepository.findBySource("integration-batch-test");
+        List<LogEntry> logs = logRepository.findBySourceContaining("integration-batch-test");
         assertThat(logs).hasSize(batchSize);
     }
 }
