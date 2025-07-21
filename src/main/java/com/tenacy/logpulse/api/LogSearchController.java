@@ -1,10 +1,10 @@
 package com.tenacy.logpulse.api;
 
 import com.tenacy.logpulse.api.dto.LogSearchResponse;
-import com.tenacy.logpulse.domain.LogEntry;
 import com.tenacy.logpulse.domain.LogRepository;
 import com.tenacy.logpulse.elasticsearch.document.LogDocument;
 import com.tenacy.logpulse.elasticsearch.service.ElasticsearchService;
+import com.tenacy.logpulse.service.LogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -28,7 +28,7 @@ import java.util.List;
 public class LogSearchController {
 
     private final ElasticsearchService elasticsearchService;
-    private final LogRepository logRepository;
+    private final LogService logService;
 
     @GetMapping
     public ResponseEntity<Page<LogSearchResponse>> search(
@@ -48,21 +48,8 @@ public class LogSearchController {
 
         try {
             if (elasticsearchService.isAvailable()) {
-                List<LogDocument> logs;
-
-                if (keyword != null && !keyword.trim().isEmpty()) {
-                    logs = elasticsearchService.searchByKeyword(keyword.trim());
-                } else if (start != null && end != null) {
-                    logs = elasticsearchService.findByTimestampBetween(start, end);
-                } else if (level != null) {
-                    logs = elasticsearchService.findByLogLevel(level);
-                } else if (source != null) {
-                    logs = elasticsearchService.findBySourceContaining(source);
-                } else if (content != null) {
-                    logs = elasticsearchService.findByContentContaining(content);
-                } else {
-                    logs = elasticsearchService.findAll();
-                }
+                List<LogDocument> logs = elasticsearchService.searchWith(
+                        keyword, level, source, content, start, end, elasticsearchPageable);
 
                 Page<LogSearchResponse> result = convertToPage(logs, elasticsearchPageable);
                 return ResponseEntity.ok(result);
@@ -73,24 +60,15 @@ public class LogSearchController {
 
         Pageable jpaPageable = convertToJpaCompatiblePageable(elasticsearchPageable);
         log.info("Falling back to database search with multiple criteria");
-        Page<LogEntry> logEntries;
+        Page<LogSearchResponse> result = logService.retrieveLogsWith(keyword, level, source, content, start, end,
+                        jpaPageable).map(dto -> LogSearchResponse.builder()
+                        .id(dto.getId().toString())
+                        .source(dto.getSource())
+                        .content(dto.getContent())
+                        .logLevel(dto.getLogLevel())
+                        .timestamp(dto.getCreatedAt())
+                        .build());
 
-        if (keyword != null && !keyword.trim().isEmpty()) {
-            logEntries = logRepository.findByContentContainingIgnoreCaseOrSourceContainingIgnoreCase(
-                    keyword.trim(), keyword.trim(), jpaPageable);
-        } else if (start != null && end != null) {
-            logEntries = logRepository.findByCreatedAtBetween(start, end, jpaPageable);
-        } else if (level != null) {
-            logEntries = logRepository.findByLogLevel(level, jpaPageable);
-        } else if (source != null) {
-            logEntries = logRepository.findBySourceContaining(source, jpaPageable);
-        } else if (content != null) {
-            logEntries = logRepository.findByContentContaining(content, jpaPageable);
-        } else {
-            logEntries = logRepository.findAll(jpaPageable);
-        }
-
-        Page<LogSearchResponse> result = LogSearchResponse.pageOf(logEntries);
         return ResponseEntity.ok(result);
     }
 

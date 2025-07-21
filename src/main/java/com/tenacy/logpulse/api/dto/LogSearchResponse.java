@@ -34,6 +34,17 @@ public class LogSearchResponse {
                         .build());
     }
 
+    public static Page<LogSearchResponse> pageOfLogEntryResponse(Page<LogEntryResponse> logEntries) {
+        return logEntries.map(entry ->
+                LogSearchResponse.builder()
+                        .id(entry.getId().toString())
+                        .source(entry.getSource())
+                        .content(entry.getContent())
+                        .logLevel(entry.getLogLevel())
+                        .timestamp(entry.getCreatedAt())
+                        .build());
+    }
+
     public static List<LogSearchResponse> listOf(List<LogDocument> logs) {
         return logs.stream()
                 .map(log -> LogSearchResponse.builder()

@@ -6,8 +6,9 @@ import com.tenacy.logpulse.elasticsearch.repository.LogDocumentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.elasticsearch.client.elc.NativeQuery;
+import org.springframework.data.elasticsearch.client.elc.NativeQueryBuilder;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.data.elasticsearch.core.SearchHits;
@@ -15,7 +16,7 @@ import org.springframework.data.elasticsearch.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
+import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -101,110 +102,76 @@ public class ElasticsearchService {
         }
     }
 
-    public List<LogDocument> findAll() {
+    public List<LogDocument> searchWith(
+            String keyword, String level, String source, String content,
+            LocalDateTime start, LocalDateTime end, Pageable pageable) {
+
         if (!isAvailable()) {
-            log.debug("Elasticsearch is not available. Returning empty result for findAll");
+            log.debug("Elasticsearch is not available. Returning empty result for complex search");
             return Collections.emptyList();
         }
 
         try {
-            List<LogDocument> result = new ArrayList<>();
-            logDocumentRepository.findAll().forEach(result::add);
-            return result;
-        } catch (Exception e) {
-            log.error("Error finding all logs from Elasticsearch: {}", e.getMessage());
-            elasticsearchAvailable = false;
-            return Collections.emptyList();
-        }
-    }
+            NativeQueryBuilder queryBuilder = NativeQuery.builder();
 
-    public List<LogDocument> findByLogLevel(String logLevel) {
-        if (!isAvailable()) {
-            log.debug("Elasticsearch is not available. Returning empty result for level: {}", logLevel);
-            return Collections.emptyList();
-        }
+            queryBuilder.withQuery(q -> {
+                return q.bool(b -> {
+                    if (keyword != null && !keyword.trim().isEmpty()) {
+                        String trimmedKeyword = keyword.trim();
+                        b.should(s -> s.match(m -> m.field("content").query(trimmedKeyword)));
+                        b.should(s -> s.match(m -> m.field("content.ngram").query(trimmedKeyword)));
+                        b.minimumShouldMatch("1");
+                    }
 
-        try {
-            return logDocumentRepository.findByLogLevel(logLevel);
-        } catch (Exception e) {
-            log.error("Error finding logs by level from Elasticsearch: {}", e.getMessage());
-            elasticsearchAvailable = false;
-            return Collections.emptyList();
-        }
-    }
+                    if (level != null && !level.trim().isEmpty()) {
+                        b.must(m -> m.term(t -> t.field("logLevel").value(level.trim())));
+                    }
 
-    public List<LogDocument> findBySourceContaining(String source) {
-        if (!isAvailable()) {
-            log.debug("Elasticsearch is not available. Returning empty result for source: {}", source);
-            return Collections.emptyList();
-        }
+                    if (source != null && !source.trim().isEmpty()) {
+                        b.must(m -> m.wildcard(w -> w.field("source").value("*" + source.trim() + "*")));
+                    }
 
-        try {
-            return logDocumentRepository.findBySourceContaining(source);
-        } catch (Exception e) {
-            log.error("Error finding logs by source from Elasticsearch: {}", e.getMessage());
-            elasticsearchAvailable = false;
-            return Collections.emptyList();
-        }
-    }
+                    if (content != null && !content.trim().isEmpty()) {
+                        b.must(m -> m.wildcard(w -> w.field("content").value("*" + content.trim() + "*")));
+                    }
 
-    public List<LogDocument> findByContentContaining(String content) {
-        if (!isAvailable()) {
-            log.debug("Elasticsearch is not available. Returning empty result for content: {}", content);
-            return Collections.emptyList();
-        }
+                    if (start != null && end != null) {
+                        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+                        String startStr = start.format(formatter);
+                        String endStr = end.format(formatter);
 
-        try {
-            return logDocumentRepository.findByContentContaining(content);
-        } catch (Exception e) {
-            log.error("Error finding logs by content from Elasticsearch: {}", e.getMessage());
-            elasticsearchAvailable = false;
-            return Collections.emptyList();
-        }
-    }
+                        b.must(m -> m.range(r -> r
+                                .date(t -> t
+                                        .field("timestamp")
+                                        .gte(startStr)
+                                        .lte(endStr))));
+                    }
 
-    public List<LogDocument> findByTimestampBetween(LocalDateTime start, LocalDateTime end) {
-        if (!isAvailable()) {
-            log.debug("Elasticsearch is not available. Returning empty result for period: {} to {}", start, end);
-            return Collections.emptyList();
-        }
+                    if (keyword == null && level == null && source == null &&
+                            content == null && (start == null || end == null)) {
+                        b.must(m -> m.matchAll(ma -> ma));
+                    }
 
-        try {
-            return logDocumentRepository.findByTimestampBetween(start, end);
-        } catch (Exception e) {
-            log.error("Error finding logs by timestamp range from Elasticsearch: {}", e.getMessage());
-            elasticsearchAvailable = false;
-            return Collections.emptyList();
-        }
-    }
+                    return b;
+                });
+            });
 
-    public List<LogDocument> searchByKeyword(String keyword) {
-        if (!isAvailable()) {
-            log.debug("Elasticsearch is not available. Returning empty result for keyword: {}", keyword);
-            return Collections.emptyList();
-        }
+            // 페이징 설정
+            queryBuilder.withPageable(pageable);
 
-        try {
-            // 개선된 검색 쿼리
-            Query searchQuery = NativeQuery.builder()
-                    .withQuery(q -> q.bool(b -> b
-                            .should(s -> s.match(m -> m
-                                    .field("content")
-                                    .query(keyword)))
-                            .should(s -> s.match(m -> m
-                                    .field("content.ngram")
-                                    .query(keyword)))
-                            .minimumShouldMatch("1")))
-                    .withPageable(PageRequest.of(0, 100))
-                    .build();
+            // 최종 쿼리 생성
+            Query searchQuery = queryBuilder.build();
 
-            SearchHits<LogDocument> searchHits = elasticsearchOperations.search(searchQuery, LogDocument.class);
+            // 검색 실행
+            SearchHits<LogDocument> searchHits = elasticsearchOperations.search(
+                    searchQuery, LogDocument.class);
 
+            // 결과 반환
             return searchHits.getSearchHits().stream()
                     .map(SearchHit::getContent)
                     .collect(Collectors.toList());
         } catch (Exception e) {
-            log.error("Error searching logs by keyword from Elasticsearch: {}", e.getMessage());
+            log.error("Error performing complex search in Elasticsearch: {}", e.getMessage());
             elasticsearchAvailable = false;
             return Collections.emptyList();
         }

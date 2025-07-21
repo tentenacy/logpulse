@@ -79,49 +79,11 @@ public class LogService {
         return LogEntryResponse.of(savedEntry);
     }
 
-    public Page<LogEntryResponse> retrieveLogsWithFilters(
-            String level, String source, LocalDateTime start, LocalDateTime end, Pageable pageable) {
-
-        // 복합 조건에 맞는 쿼리 메서드 호출
-        Page<LogEntry> logEntries;
-
-        if (level != null && source != null && start != null && end != null) {
-            logEntries = logRepository.findByLogLevelAndSourceContainingAndCreatedAtBetween(
-                    level, source, start, end, pageable);
-        } else if (level != null && source != null) {
-            logEntries = logRepository.findByLogLevelAndSourceContaining(level, source, pageable);
-        } else if (level != null && start != null && end != null) {
-            logEntries = logRepository.findByLogLevelAndCreatedAtBetween(level, start, end, pageable);
-        } else if (source != null && start != null && end != null) {
-            logEntries = logRepository.findBySourceContainingAndCreatedAtBetween(source, start, end, pageable);
-        } else if (level != null) {
-            logEntries = logRepository.findByLogLevel(level, pageable);
-        } else if (source != null) {
-            logEntries = logRepository.findBySourceContaining(source, pageable);
-        } else if (start != null && end != null) {
-            logEntries = logRepository.findByCreatedAtBetween(start, end, pageable);
-        } else {
-            logEntries = logRepository.findAll(pageable);
-        }
+    public Page<LogEntryResponse> retrieveLogsWith(String keyword, String level, String source, String content,
+                                                   LocalDateTime start, LocalDateTime end, Pageable pageable) {
+        Page<LogEntry> logEntries = logRepository.searchWithMultipleCriteria(
+                keyword, level, source, content, start, end, pageable);
 
         return logEntries.map(LogEntryResponse::of);
-    }
-
-    public List<LogEntryResponse> retrieveAllLogs() {
-        return logRepository.findAll().stream()
-                .map(LogEntryResponse::of)
-                .collect(Collectors.toList());
-    }
-
-    public List<LogEntryResponse> retrieveLogsByLevel(String level) {
-        return logRepository.findByLogLevel(level).stream()
-                .map(LogEntryResponse::of)
-                .collect(Collectors.toList());
-    }
-
-    public List<LogEntryResponse> retrieveLogsBetween(LocalDateTime start, LocalDateTime end) {
-        return logRepository.findByCreatedAtBetween(start, end).stream()
-                .map(LogEntryResponse::of)
-                .collect(Collectors.toList());
     }
 }

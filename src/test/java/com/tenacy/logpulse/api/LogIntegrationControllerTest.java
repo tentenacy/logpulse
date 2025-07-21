@@ -42,12 +42,6 @@ public class LogIntegrationControllerTest {
     @Autowired
     private SimpleTestSupport testSupport;
 
-    @Value("${logpulse.kafka.topics.raw-logs}")
-    private String rawLogsTopic;
-
-    @Value("${spring.kafka.consumer.group-id}")
-    private String consumerGroupId;
-
     @BeforeEach
     void setUp() {
         logRepository.deleteAll();

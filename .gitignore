@@ -37,4 +37,4 @@ out/
 .vscode/
 
 ### Configuration ###
-/src/main/resources/application-secrets.yml
+/src/main/resources/secrets.yml

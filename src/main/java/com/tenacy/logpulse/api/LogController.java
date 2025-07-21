@@ -42,6 +42,6 @@ public class LogController {
         Sort.Direction direction = sortDir.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC;
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
 
-        return ResponseEntity.ok(logService.retrieveLogsWithFilters(level, source, start, end, pageable));
+        return ResponseEntity.ok(logService.retrieveLogsWith(null, level, source, null, start, end, pageable));
     }
 }
