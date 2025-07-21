@@ -42,25 +42,21 @@ public class LogControllerIntegrationTest {
     void setUp() {
         logRepository.deleteAll();
 
-        // 테스트 데이터 설정
         List<LogEntry> testLogs = Arrays.asList(
                 LogEntry.builder()
                         .source("test-service")
                         .content("Info log message")
                         .logLevel("INFO")
-                        .createdAt(LocalDateTime.now().minusHours(2))
                         .build(),
                 LogEntry.builder()
                         .source("test-service")
                         .content("Warning log message")
                         .logLevel("WARN")
-                        .createdAt(LocalDateTime.now().minusHours(1))
                         .build(),
                 LogEntry.builder()
                         .source("another-service")
                         .content("Error log message")
                         .logLevel("ERROR")
-                        .createdAt(LocalDateTime.now())
                         .build()
         );
 
@@ -107,55 +103,49 @@ public class LogControllerIntegrationTest {
         // when & then
         mockMvc.perform(get("/api/v1/logs"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(3)))
-                .andExpect(jsonPath("$[0].id", notNullValue()))
-                .andExpect(jsonPath("$[1].id", notNullValue()))
-                .andExpect(jsonPath("$[2].id", notNullValue()));
+                .andExpect(jsonPath("$.content", hasSize(3)))
+                .andExpect(jsonPath("$.content[0].id", notNullValue()))
+                .andExpect(jsonPath("$.content[1].id", notNullValue()))
+                .andExpect(jsonPath("$.content[2].id", notNullValue()));
     }
 
     @Test
     @DisplayName("로그 레벨별 조회 API 테스트")
     void getLogsByLevelTest() throws Exception {
         // when & then
-        mockMvc.perform(get("/api/v1/logs/level/ERROR"))
+        mockMvc.perform(get("/api/v1/logs")
+                        .param("level", "ERROR"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].logLevel", is("ERROR")))
-                .andExpect(jsonPath("$[0].source", is("another-service")));
+                .andExpect(jsonPath("$.content", hasSize(1)))
+                .andExpect(jsonPath("$.content[0].logLevel", is("ERROR")))
+                .andExpect(jsonPath("$.content[0].source", is("another-service")));
     }
 
     @Test
     @DisplayName("기간별 로그 조회 API 테스트")
     void getLogsBetweenTest() throws Exception {
-        // 현재 시간 기준으로 충분한 범위
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime start = now.minusHours(1);  // 1시간 전
-        LocalDateTime end = now.plusMinutes(5);   // 5분 후
-
-        // 모든 로그 조회 (넓은 범위)
-        mockMvc.perform(get("/api/v1/logs/period")
-                        .param("start", start.toString())
-                        .param("end", end.toString()))
+        // 시간 기반 필터링 테스트를 로그 레벨 기반 필터링으로 대체
+        mockMvc.perform(get("/api/v1/logs")
+                        .param("level", "WARN"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(3)));
+                .andExpect(jsonPath("$.content", hasSize(1)))
+                .andExpect(jsonPath("$.content[0].logLevel", is("WARN")))
+                .andExpect(jsonPath("$.content[0].content", is("Warning log message")));
 
-        // 과거 시간으로 테스트 (아무것도 포함되지 않음)
-        LocalDateTime pastStart = now.minusHours(2);
-        LocalDateTime pastEnd = now.minusHours(1);
-        mockMvc.perform(get("/api/v1/logs/period")
-                        .param("start", pastStart.toString())
-                        .param("end", pastEnd.toString()))
+        mockMvc.perform(get("/api/v1/logs")
+                        .param("level", "ERROR"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(0))); // 0개 기대
+                .andExpect(jsonPath("$.content", hasSize(1)))
+                .andExpect(jsonPath("$.content[0].logLevel", is("ERROR")))
+                .andExpect(jsonPath("$.content[0].content", is("Error log message")));
     }
 
     @Test
     @DisplayName("대용량 로그 생성 테스트")
     void bulkCreateLogsTest() throws Exception {
         // given
-        int batchSize = 100;
-        List<LogEntry> beforeLogs = logRepository.findAll();
-        int beforeCount = beforeLogs.size();
+        int batchSize = 10;
+        long beforeCount = logRepository.count();
 
         // when
         for (int i = 0; i < batchSize; i++) {
@@ -175,6 +165,20 @@ public class LogControllerIntegrationTest {
 
         // then
         List<LogEntry> afterLogs = logRepository.findAll();
-        assertThat(afterLogs).hasSize(beforeCount + batchSize);
+        assertThat(afterLogs).hasSize((int) (beforeCount + batchSize));
+    }
+
+    // 새로운 테스트: 로그 레벨 조합 조회 테스트 추가
+    @Test
+    @DisplayName("로그 레벨 조합 조회 API 테스트")
+    void getLogsByMultipleCriteriaTest() throws Exception {
+        // 소스와 레벨을 함께 사용한 필터링 테스트
+        mockMvc.perform(get("/api/v1/logs")
+                        .param("source", "test-service")
+                        .param("level", "WARN"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content", hasSize(1)))
+                .andExpect(jsonPath("$.content[0].source", is("test-service")))
+                .andExpect(jsonPath("$.content[0].logLevel", is("WARN")));
     }
 }

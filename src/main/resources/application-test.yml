@@ -1,5 +1,6 @@
 spring:
   datasource:
+    url: jdbc:mysql://${logpulse.mysql.host}:${logpulse.mysql.port}/logpulse_test?rewriteBatchedStatements=true
     username: root
     password: 1234
     hikari:
