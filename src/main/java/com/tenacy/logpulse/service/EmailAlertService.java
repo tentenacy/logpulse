@@ -24,10 +24,10 @@ public class EmailAlertService implements AlertService {
     @Value("${logpulse.alert.email.enabled:false}")
     private boolean emailEnabled;
 
-    @Value("${logpulse.alert.email.sender:}")
+    @Value("${logpulse.alert.email.sender}")
     private String sender;
 
-    @Value("${logpulse.alert.email.recipients:}")
+    @Value("${logpulse.alert.email.recipients}")
     private String recipients;
 
     @Async("emailTaskExecutor")

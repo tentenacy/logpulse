@@ -26,7 +26,8 @@ public class JdbcBatchInsertService {
             return;
         }
 
-        String sql = "INSERT INTO logs (source, content, log_level, created_at) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO logs (source, content, log_level, created_at, compressed, original_size, compressed_size) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?)";
 
         long startTime = System.currentTimeMillis();
 
@@ -38,6 +39,10 @@ public class JdbcBatchInsertService {
                 ps.setString(2, entry.getContent());
                 ps.setString(3, entry.getLogLevel());
                 ps.setTimestamp(4, Timestamp.valueOf(entry.getCreatedAt()));
+
+                ps.setBoolean(5, entry.getCompressed() != null ? entry.getCompressed() : false);
+                ps.setInt(6, entry.getOriginalSize() != null ? entry.getOriginalSize() : 0);
+                ps.setInt(7, entry.getCompressedSize() != null ? entry.getCompressedSize() : 0);
             }
 
             @Override
