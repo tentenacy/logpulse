@@ -3,6 +3,7 @@ package com.tenacy.logpulse.elasticsearch.service;
 import com.tenacy.logpulse.domain.LogEntry;
 import com.tenacy.logpulse.elasticsearch.document.LogDocument;
 import com.tenacy.logpulse.elasticsearch.repository.LogDocumentRepository;
+import com.tenacy.logpulse.service.LogCompressionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,6 +29,7 @@ public class ElasticsearchService {
 
     private final LogDocumentRepository logDocumentRepository;
     private final ElasticsearchOperations elasticsearchOperations;
+    private final LogCompressionService compressionService;
 
     @Value("${logpulse.elasticsearch.bulk-size:1000}")
     private int bulkSize;
@@ -58,15 +60,30 @@ public class ElasticsearchService {
     }
 
     public void saveLog(LogEntry logEntry) {
+        saveLog(logEntry, null);
+    }
+
+    public void saveLog(LogEntry logEntry, String explicitContent) {
         if (!isAvailable()) {
             log.debug("Elasticsearch is not available. Skipping save operation for log: {}", logEntry.getId());
             return;
         }
 
         try {
-            LogDocument logDocument = LogDocument.of(logEntry);
+            String contentToUse = explicitContent;
+
+            // 명시적 콘텐츠가 없고 압축된 경우 압축 해제
+            if (contentToUse == null) {
+                contentToUse = logEntry.getContent();
+                if (Boolean.TRUE.equals(logEntry.getCompressed()) && contentToUse != null) {
+                    contentToUse = compressionService.decompressContent(contentToUse);
+                }
+            }
+
+            // 최종적으로 사용할 콘텐츠로 LogDocument 생성
+            LogDocument logDocument = createLogDocument(logEntry, contentToUse);
             logDocumentRepository.save(logDocument);
-            log.debug("Saved log to Elasticsearch: {}", logDocument);
+            log.debug("Saved log to Elasticsearch: {}", logDocument.getId());
         } catch (Exception e) {
             log.error("Failed to save log to Elasticsearch: {}", e.getMessage());
             elasticsearchAvailable = false;
@@ -89,7 +106,14 @@ public class ElasticsearchService {
                 int toIndex = Math.min(fromIndex + effectiveBulkSize, totalSize);
 
                 List<LogDocument> chunk = logEntries.subList(fromIndex, toIndex).stream()
-                        .map(LogDocument::of)
+                        .map(entry -> {
+                            String contentToUse = entry.getContent();
+                            // 압축된 경우 압축 해제
+                            if (Boolean.TRUE.equals(entry.getCompressed()) && contentToUse != null) {
+                                contentToUse = compressionService.decompressContent(contentToUse);
+                            }
+                            return createLogDocument(entry, contentToUse);
+                        })
                         .collect(Collectors.toList());
 
                 logDocumentRepository.saveAll(chunk);
@@ -100,6 +124,16 @@ public class ElasticsearchService {
             log.error("Failed to save logs to Elasticsearch in bulk: {}", e.getMessage());
             elasticsearchAvailable = false;
         }
+    }
+
+    private LogDocument createLogDocument(LogEntry entry, String content) {
+        return LogDocument.builder()
+                .id(entry.getId() != null ? entry.getId().toString() : java.util.UUID.randomUUID().toString())
+                .source(entry.getSource())
+                .content(content)
+                .logLevel(entry.getLogLevel())
+                .timestamp(entry.getCreatedAt())
+                .build();
     }
 
     public List<LogDocument> searchWith(

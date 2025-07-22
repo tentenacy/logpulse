@@ -2,6 +2,7 @@ package com.tenacy.logpulse.config;
 
 import com.tenacy.logpulse.batch.LogArchiveProcessor;
 import com.tenacy.logpulse.domain.LogEntry;
+import com.tenacy.logpulse.service.LogCompressionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
@@ -31,6 +32,7 @@ public class LogArchiveJobConfig {
     private final JobRepository jobRepository;
     private final PlatformTransactionManager transactionManager;
     private final DataSource dataSource;
+    private final LogCompressionService logCompressionService;
 
     @Value("${logpulse.batch.chunk-size:100}")
     private int chunkSize;
@@ -63,7 +65,8 @@ public class LogArchiveJobConfig {
         return new JdbcCursorItemReaderBuilder<LogEntry>()
                 .name("oldLogsReader")
                 .dataSource(dataSource)
-                .sql("SELECT id, source, content, log_level, created_at FROM logs WHERE created_at < ?")
+                .sql("SELECT id, source, content, log_level, created_at, compressed, original_size, compressed_size " +
+                        "FROM logs WHERE created_at < ?")
                 .preparedStatementSetter(ps -> ps.setObject(1, cutoffDate))
                 .rowMapper(new DataClassRowMapper<>(LogEntry.class))
                 .build();
@@ -80,8 +83,10 @@ public class LogArchiveJobConfig {
     public JdbcBatchItemWriter<LogEntry> archiveLogsWriter() {
         return new JdbcBatchItemWriterBuilder<LogEntry>()
                 .dataSource(dataSource)
-                .sql("INSERT INTO log_archives (id, source, content, log_level, created_at, archived_at) " +
-                        "VALUES (:id, :source, :content, :logLevel, :createdAt, NOW())")
+                .sql("INSERT INTO log_archives (id, source, content, log_level, created_at, archived_at, " +
+                        "compressed, original_size, compressed_size) " +
+                        "VALUES (:id, :source, :content, :logLevel, :createdAt, NOW(), " +
+                        ":compressed, :originalSize, :compressedSize)")
                 .beanMapped()
                 .build();
     }

@@ -10,7 +10,12 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "logs")
+@Table(name = "logs", indexes = {
+        @Index(name = "idx_logs_compressed", columnList = "compressed"),
+        @Index(name = "idx_logs_log_level", columnList = "logLevel"),
+        @Index(name = "idx_logs_source", columnList = "source"),
+        @Index(name = "idx_logs_created_at", columnList = "createdAt")
+})
 @Data
 @Builder
 @NoArgsConstructor
@@ -29,4 +34,18 @@ public class LogEntry {
 
     @CreationTimestamp
     private LocalDateTime createdAt;
+
+    @Column(name = "compressed")
+    private Boolean compressed;
+
+    @Column(name = "original_size")
+    private Integer originalSize;
+
+    @Column(name = "compressed_size")
+    private Integer compressedSize;
+
+    @Transient
+    public String getDecompressedContent() {
+        return this.content;
+    }
 }

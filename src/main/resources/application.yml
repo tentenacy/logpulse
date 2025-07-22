@@ -92,6 +92,11 @@ logpulse:
   monitor:
     error-threshold: 10
     error-time-window: 60000
+  compression:
+    enabled: true
+    min-size: 1024
+    algorithm: gzip
+    stats-enabled: true
 
 management:
   health:
