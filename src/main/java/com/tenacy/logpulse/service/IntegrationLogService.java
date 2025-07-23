@@ -65,16 +65,10 @@ public class IntegrationLogService {
         }
     }
 
-    /**
-     * 재시도 여부 결정 (성능 테스트 관련 로그는 항상 재시도)
-     */
     private boolean shouldRetry(LogEventDto logEventDto) {
         return "performance-test".equals(logEventDto.getSource());
     }
 
-    /**
-     * 재시도 로직 구현
-     */
     private void retryProcessing(LogEventDto logEventDto, int attempt) {
         if (attempt > 3) {
             log.error("Gave up after 3 retry attempts for log event: {}", logEventDto);
