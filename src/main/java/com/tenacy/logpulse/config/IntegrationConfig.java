@@ -102,16 +102,6 @@ public class IntegrationConfig {
     }
 
     @Bean
-    public LogEnricher logEnricher() {
-        return new LogEnricher();
-    }
-
-    @Bean
-    public LogFilter logFilter() {
-        return new LogFilter();
-    }
-
-    @Bean
     public IntegrationFlow logProcessingFlow() {
         return IntegrationFlow.from("logInputChannel")
                 .<Object, Object>transform(payload -> {

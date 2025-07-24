@@ -9,7 +9,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
-@Component
 @Slf4j
 public class LogRouter {
 
