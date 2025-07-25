@@ -4,7 +4,6 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -23,10 +22,14 @@ import java.util.zip.GZIPOutputStream;
 public class LogCompressionService {
 
     private final MeterRegistry meterRegistry;
-    private final Counter compressionEnabledCounter;
-    private final Counter compressionDisabledCounter;
 
-    private final DistributionSummary compressionRatioSummary;
+    private final Counter compressionAttemptCounter;
+    private final Counter compressionSuccessCounter;
+    private final Counter decompressionAttemptCounter;
+    private final Counter decompressionSuccessCounter;
+    private final Counter compressionErrorCounter;
+
+    private final DistributionSummary compressionRatioDistribution;
     private final Timer compressionTimer;
     private final Timer decompressionTimer;
 
@@ -36,28 +39,45 @@ public class LogCompressionService {
     @Value("${logpulse.compression.min-size:1024}")
     private int minCompressionSize;
 
-    public LogCompressionService(MeterRegistry meterRegistry,
-                                 Counter compressionEnabledCounter,
-                                 Counter compressionDisabledCounter) {
+    public LogCompressionService(MeterRegistry meterRegistry) {
         this.meterRegistry = meterRegistry;
-        this.compressionEnabledCounter = compressionEnabledCounter;
-        this.compressionDisabledCounter = compressionDisabledCounter;
 
-        // 압축률 분포 측정 도구 등록 (0-1 사이의 값, 낮을수록 압축 효과 좋음)
-        this.compressionRatioSummary = DistributionSummary.builder("logpulse.compression.ratio")
+        // 카운터 등록
+        this.compressionAttemptCounter = Counter.builder("logpulse.compression.attempt.count")
+                .description("Number of compression attempts")
+                .register(meterRegistry);
+
+        this.compressionSuccessCounter = Counter.builder("logpulse.compression.success.count")
+                .description("Number of successful compressions")
+                .register(meterRegistry);
+
+        this.decompressionAttemptCounter = Counter.builder("logpulse.decompression.attempt.count")
+                .description("Number of decompression attempts")
+                .register(meterRegistry);
+
+        this.decompressionSuccessCounter = Counter.builder("logpulse.decompression.success.count")
+                .description("Number of successful decompressions")
+                .register(meterRegistry);
+
+        this.compressionErrorCounter = Counter.builder("logpulse.compression.error.count")
+                .description("Number of compression/decompression errors")
+                .register(meterRegistry);
+
+        // 압축률 분포 측정 도구 등록
+        this.compressionRatioDistribution = DistributionSummary.builder("logpulse.compression.ratio.distribution")
                 .description("Compression ratio distribution (compressed size / original size)")
                 .scale(100) // 백분율로 표시
                 .publishPercentiles(0.5, 0.75, 0.9, 0.95, 0.99) // 중앙값, 75%, 90%, 95%, 99% 백분위수 발행
                 .register(meterRegistry);
 
         // 압축 시간 측정 타이머
-        this.compressionTimer = Timer.builder("logpulse.compression.time")
+        this.compressionTimer = Timer.builder("logpulse.compression.operation.time")
                 .description("Time taken to compress log content")
                 .publishPercentiles(0.5, 0.95, 0.99)
                 .register(meterRegistry);
 
         // 압축 해제 시간 측정 타이머
-        this.decompressionTimer = Timer.builder("logpulse.decompression.time")
+        this.decompressionTimer = Timer.builder("logpulse.decompression.operation.time")
                 .description("Time taken to decompress log content")
                 .publishPercentiles(0.5, 0.95, 0.99)
                 .register(meterRegistry);
@@ -70,9 +90,7 @@ public class LogCompressionService {
                 !isCompressed(content);
 
         if (shouldCompress) {
-            compressionEnabledCounter.increment();
-        } else {
-            compressionDisabledCounter.increment();
+            compressionAttemptCounter.increment();
         }
 
         // 압축 결정 요인 측정
@@ -102,13 +120,16 @@ public class LogCompressionService {
                 byte[] compressedBytes = baos.toByteArray();
                 String compressedContent = Base64.getEncoder().encodeToString(compressedBytes);
 
-                // 압축률 계산 및 측정
+                // 압축률 계산 및 측정 (압축 크기 / 원본 크기)
                 double compressionRatio = (double) compressedBytes.length / content.getBytes(StandardCharsets.UTF_8).length;
-                compressionRatioSummary.record(compressionRatio);
+                compressionRatioDistribution.record(compressionRatio * 100); // 백분율로 기록
 
                 // 원본 크기와 압축 크기 측정
-                meterRegistry.counter("logpulse.compression.bytes.original").increment(content.getBytes(StandardCharsets.UTF_8).length);
-                meterRegistry.counter("logpulse.compression.bytes.compressed").increment(compressedBytes.length);
+                meterRegistry.counter("logpulse.compression.bytes.input").increment(content.getBytes(StandardCharsets.UTF_8).length);
+                meterRegistry.counter("logpulse.compression.bytes.output").increment(compressedBytes.length);
+
+                // 성공 카운터 증가
+                compressionSuccessCounter.increment();
 
                 log.debug("Compressed log content: original size={}, compressed size={}, ratio={}",
                         content.length(), compressedBytes.length,
@@ -118,6 +139,7 @@ public class LogCompressionService {
 
             } catch (IOException e) {
                 // 압축 실패 카운터 증가
+                compressionErrorCounter.increment();
                 meterRegistry.counter("logpulse.compression.errors", "type", "compression_failure").increment();
                 log.warn("Failed to compress log content: {}", e.getMessage());
                 return content;
@@ -129,6 +151,9 @@ public class LogCompressionService {
         if (compressedContent == null || compressedContent.isEmpty() || !isCompressed(compressedContent)) {
             return compressedContent;
         }
+
+        // 압축 해제 시도 카운터 증가
+        decompressionAttemptCounter.increment();
 
         // 타이머로 압축 해제 시간 측정
         return decompressionTimer.record(() -> {
@@ -151,6 +176,9 @@ public class LogCompressionService {
                     meterRegistry.counter("logpulse.decompression.bytes.input").increment(compressedBytes.length);
                     meterRegistry.counter("logpulse.decompression.bytes.output").increment(decompressedContent.getBytes(StandardCharsets.UTF_8).length);
 
+                    // 성공 카운터 증가
+                    decompressionSuccessCounter.increment();
+
                     log.debug("Decompressed log content: compressed size={}, original size={}",
                             compressedBytes.length, decompressedContent.length());
 
@@ -159,11 +187,13 @@ public class LogCompressionService {
 
             } catch (IllegalArgumentException e) {
                 // 잘못된 Base64 형식 카운터 증가
+                compressionErrorCounter.increment();
                 meterRegistry.counter("logpulse.compression.errors", "type", "invalid_base64").increment();
                 log.debug("Content is not Base64 encoded, returning as is");
                 return compressedContent;
             } catch (IOException e) {
                 // 압축 해제 실패 카운터 증가
+                compressionErrorCounter.increment();
                 meterRegistry.counter("logpulse.compression.errors", "type", "decompression_failure").increment();
                 log.warn("Failed to decompress log content: {}", e.getMessage());
                 return compressedContent;
@@ -186,47 +216,33 @@ public class LogCompressionService {
         }
     }
 
-    public double getCompressionRatio(String originalContent, String compressedContent) {
-        if (originalContent == null || compressedContent == null ||
-                originalContent.isEmpty() || compressedContent.isEmpty()) {
-            return 1.0;
-        }
-
-        if (!isCompressed(compressedContent)) {
-            return 1.0;
-        }
-
-        try {
-            byte[] decodedContent = Base64.getDecoder().decode(compressedContent);
-            return (double) decodedContent.length / originalContent.getBytes(StandardCharsets.UTF_8).length;
-        } catch (IllegalArgumentException e) {
-            return 1.0;
-        }
-    }
-
-    /**
-     * 주기적으로 압축 통계 로깅 (1분마다)
-     */
     @Scheduled(fixedRate = 60000)
     public void logCompressionStats() {
-        double enabled = compressionEnabledCounter.count();
-        double disabled = compressionDisabledCounter.count();
-        double total = enabled + disabled;
+        double attempts = compressionAttemptCounter.count();
+        double successes = compressionSuccessCounter.count();
+        double decompAttempts = decompressionAttemptCounter.count();
+        double decompSuccesses = decompressionSuccessCounter.count();
+        double errors = compressionErrorCounter.count();
 
-        if (total > 0) {
-            double compressionRate = (enabled / total) * 100.0;
-            double avgRatio = compressionRatioSummary.mean();
-            double p50Ratio = compressionRatioSummary.percentile(0.5);
-            double p95Ratio = compressionRatioSummary.percentile(0.95);
+        if (attempts > 0) {
+            double successRate = (successes / attempts) * 100.0;
+            double avgRatio = compressionRatioDistribution.mean();
+            double p50Ratio = compressionRatioDistribution.percentile(0.5);
+            double p95Ratio = compressionRatioDistribution.percentile(0.95);
 
-            double compressionAvgTimeMs = compressionTimer.mean(java.util.concurrent.TimeUnit.MILLISECONDS);
-            double decompressionAvgTimeMs = decompressionTimer.mean(java.util.concurrent.TimeUnit.MILLISECONDS);
+            log.info("Compression operation stats - Attempts: {}, Successes: {} ({:.2f}%), " +
+                            "Decompressions: {}, Errors: {}, Avg ratio: {:.2f}%, Median: {:.2f}%, 95p: {:.2f}%",
+                    (long)attempts,
+                    (long)successes,
+                    successRate,
+                    (long)decompAttempts,
+                    (long)errors,
+                    avgRatio,
+                    p50Ratio,
+                    p95Ratio);
 
-            log.info("Compression stats - Total: {}, Compressed: {} ({:.2f}%), Ratio: avg={:.2f}%, p50={:.2f}%, p95={:.2f}%, " +
-                            "Time: compress={:.2f}ms, decompress={:.2f}ms",
-                    (long)total, (long)enabled, compressionRate,
-                    avgRatio * 100, p50Ratio * 100, p95Ratio * 100,
-                    compressionAvgTimeMs, decompressionAvgTimeMs);
+            // 메트릭 게이지 업데이트
+            meterRegistry.gauge("logpulse.compression.success.rate", successRate);
         }
     }
 }
