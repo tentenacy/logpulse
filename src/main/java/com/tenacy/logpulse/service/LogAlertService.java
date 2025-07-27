@@ -4,15 +4,13 @@ import com.tenacy.logpulse.api.dto.LogEventDto;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
-import lombok.RequiredArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -26,12 +24,10 @@ public class LogAlertService {
     private final AlertService alertService;
     private final MeterRegistry meterRegistry;
 
-    // 메트릭 카운터
     private final Counter alertsTriggeredCounter;
     private final Counter errorLogsCounter;
     private final Counter thresholdReachedCounter;
 
-    // 메트릭 게이지
     private final AtomicInteger currentErrorRateGauge = new AtomicInteger(0);
     private final AtomicLong lastAlertTimeGauge = new AtomicLong(0);
     private final AtomicInteger windowErrorCountGauge = new AtomicInteger(0);
@@ -101,9 +97,6 @@ public class LogAlertService {
         }
     }
 
-    /**
-     * 전체 오류 비율 체크
-     */
     private void checkGlobalErrorRate(LogEventDto logEventDto) {
         // 시간 윈도우를 체크하여 초기화 필요한지 확인
         long currentTime = System.currentTimeMillis();
@@ -156,14 +149,11 @@ public class LogAlertService {
             }
 
             // 현재 오류율 계산 및 게이지 업데이트
-            double errorRate = (double) count / (errorTimeWindow / 1000);
+            double errorRate = (double) count / (errorTimeWindow / 1000f);
             currentErrorRateGauge.set((int) Math.round(errorRate));
         }
     }
 
-    /**
-     * 소스별 오류 비율 체크
-     */
     private void checkSourceSpecificErrorRate(LogEventDto logEventDto) {
         String source = logEventDto.getSource() != null ? logEventDto.getSource() : "unknown";
 
@@ -206,9 +196,6 @@ public class LogAlertService {
                 SourceErrorTracker::getErrorCount);
     }
 
-    /**
-     * 알림 발송 메서드
-     */
     private void sendAlert(String subject, String message, String type) {
         try {
             alertService.sendAlert(subject, message);
@@ -225,9 +212,6 @@ public class LogAlertService {
         }
     }
 
-    /**
-     * 주기적으로 알림 통계 로깅 (5분마다)
-     */
     @Scheduled(fixedRate = 300000)
     public void logAlertStats() {
         double triggeredAlerts = alertsTriggeredCounter.count();
@@ -252,9 +236,6 @@ public class LogAlertService {
         cleanupOldSourceTrackers();
     }
 
-    /**
-     * 오래된 소스 트래커 정리 (1시간 이상 업데이트 없는 트래커)
-     */
     private void cleanupOldSourceTrackers() {
         long currentTime = System.currentTimeMillis();
         long cleanupThreshold = currentTime - TimeUnit.HOURS.toMillis(1);
@@ -269,15 +250,15 @@ public class LogAlertService {
         }
     }
 
-    /**
-     * 소스별 오류 추적을 위한 내부 클래스
-     */
     private static class SourceErrorTracker {
         private final int threshold;
         private final long timeWindow;
         private final AtomicInteger errorCount = new AtomicInteger(0);
         private final AtomicLong lastResetTime = new AtomicLong(System.currentTimeMillis());
+        @Setter
+        @Getter
         private long lastAlertTime = 0;
+        @Getter
         private long lastUpdateTime = System.currentTimeMillis();
 
         public SourceErrorTracker(int threshold, long timeWindow) {
@@ -285,10 +266,6 @@ public class LogAlertService {
             this.timeWindow = timeWindow;
         }
 
-        /**
-         * 오류 추적하고 임계값 초과 여부 반환
-         * @return 임계값 초과시 true
-         */
         public boolean trackError() {
             lastUpdateTime = System.currentTimeMillis();
 
@@ -307,16 +284,5 @@ public class LogAlertService {
             return errorCount.get();
         }
 
-        public long getLastAlertTime() {
-            return lastAlertTime;
-        }
-
-        public void setLastAlertTime(long time) {
-            this.lastAlertTime = time;
-        }
-
-        public long getLastUpdateTime() {
-            return lastUpdateTime;
-        }
     }
 }
