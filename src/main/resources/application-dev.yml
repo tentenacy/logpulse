@@ -9,10 +9,10 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
-        generate_statistics: true
+        generate_statistics: false
   kafka:
     consumer:
       group-id: logpulse-group
@@ -34,11 +34,11 @@ spring:
 
 logging:
   level:
-    root: INFO
-    com.tenacy.logpulse: DEBUG
+    root: WARN
+    com.tenacy.logpulse: WARN
     org.springframework: WARN
     org.hibernate: WARN
-    org.hibernate.SQL: DEBUG
+    org.hibernate.SQL: WARN
 
 logpulse:
   collector:

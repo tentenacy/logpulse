@@ -8,10 +8,15 @@ spring:
       - classpath:secrets.yml
       - classpath:env-${APP_ENVIRONMENT:docker}.yml
   datasource:
-    url: jdbc:mysql://${logpulse.mysql.host}:${logpulse.mysql.port}/logpulse?rewriteBatchedStatements=true
+    url: jdbc:mysql://${logpulse.mysql.host}:${logpulse.mysql.port}/logpulse?rewriteBatchedStatements=true&cachePrepStmts=true&useServerPrepStmts=true&prepStmtCacheSize=500&prepStmtCacheSqlLimit=2048
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       pool-name: LogPulseHikariPool
+      maximum-pool-size: 20
+      minimum-idle: 5
+      idle-timeout: 30000
+      connection-timeout: 10000
+      max-lifetime: 1800000
   jpa:
     properties:
       hibernate:
@@ -19,8 +24,11 @@ spring:
         jdbc:
           batch_size: 100
           batch_versioned_data: true
+          fetch_size: 100
         order_inserts: true
         order_updates: true
+        generate_statistics: false
+    open-in-view: false
   batch:
     jdbc:
       initialize-schema: always
@@ -37,12 +45,27 @@ spring:
       enable-auto-commit: false
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      max-poll-records: 500
+      fetch-max-wait: 500
+      fetch-min-size: 1
+      heartbeat-interval: 3000
+      max-poll-interval-ms: 300000
+      concurrency: 3
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      batch-size: 16384
+      buffer-memory: 33554432
+      acks: 1
+      retries: 3
+      compression-type: snappy
     listener:
       type: batch
       ack-mode: MANUAL_IMMEDIATE
+      concurrency: 3
+    properties:
+      request.timeout.ms: 30000
+      max.block.ms: 10000
   mail:
     host: ${mail.host:smtp.example.com}
     port: ${mail.port:587}
@@ -54,14 +77,15 @@ spring:
           auth: true
           starttls:
             enable: true
+    test-connection: false
   elasticsearch:
     uris: http://${logpulse.elasticsearch.host}:${logpulse.elasticsearch.port}
     rest:
-      connection-timeout: 500
-      read-timeout: 1000
-      connection-retry-timeout: 500
+      connection-timeout: 1000
+      read-timeout: 10000
+      connection-retry-timeout: 1000
     connection-timeout: 1000
-    socket-timeout: 1000
+    socket-timeout: 30000
 
 server:
   port: 8080
@@ -71,7 +95,14 @@ server:
     enabled: true
     mime-types: application/json,application/xml,text/html,text/plain
     min-response-size: 1024
+  tomcat:
+    max-threads: 200
+    min-spare-threads: 10
+    max-connections: 8192
+    accept-count: 100
+    connection-timeout: 20000
 
+# LogPulse 커스텀 설정
 logpulse:
   kafka:
     topics:
@@ -84,11 +115,18 @@ logpulse:
       enabled: true
       sender: ${mail.sender:noreply@example.com}
       recipients: ${mail.recipients:admin@example.com}
+    error-threshold: 10
+    error-time-window: 60000
+    cooldown-period: 300000
+    source-specific-enabled: true
   cleanup:
     retention-days: 90
   elasticsearch:
     enabled: true
     bulk-size: 1000
+    async-indexing-batch-size: 200
+    indexing-throttle-ms: 100
+    thread-pool-size: 3
   monitor:
     error-threshold: 10
     error-time-window: 60000
@@ -97,22 +135,40 @@ logpulse:
     min-size: 1024
     algorithm: gzip
     stats-enabled: true
+  consumer:
+    max-batch-size: 1000
+    direct-es-threshold: 500
+  jdbc:
+    batch-size: 500
+    queue-threshold: 1000
+    enable-async: true
+    thread-pool-size: 3
+  async:
+    core-pool-size: 5
+    max-pool-size: 20
+    queue-capacity: 500
+  metrics:
+    enable-detailed-jvm-metrics: true
+  hibernate:
+    statistics: false
 
+# Actuator & 모니터링 설정
 management:
   health:
     elasticsearch:
       enabled: false
+    mail:
+      enabled: false
   endpoints:
     web:
       exposure:
-        include: health,info,prometheus,metrics
+        include: health,info,prometheus,metrics,loggers
+      base-path: /actuator
   endpoint:
     health:
       show-details: always
-      mail:
-        enabled: false
-      elasticsearch:
-        enabled: false
+    prometheus:
+      enabled: true
   metrics:
     export:
       prometheus:
@@ -122,8 +178,14 @@ management:
     distribution:
       percentiles-histogram:
         http.server.requests: true
+        logpulse.kafka.batch.processing.time: true
+        logpulse.elasticsearch.indexing.time: true
+        logpulse.jdbc.batch.time: true
       percentiles:
         http.server.requests: 0.5, 0.9, 0.95, 0.99
+        logpulse.kafka.batch.processing.time: 0.5, 0.9, 0.95, 0.99
+        logpulse.elasticsearch.indexing.time: 0.5, 0.9, 0.95, 0.99
+        logpulse.jdbc.batch.time: 0.5, 0.9, 0.95, 0.99
     enable:
       jvm: true
       process: true
