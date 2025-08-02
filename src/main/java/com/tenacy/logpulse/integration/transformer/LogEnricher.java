@@ -14,22 +14,22 @@ import java.util.UUID;
 @Slf4j
 public class LogEnricher {
 
-    @Transformer(inputChannel = "errorLogChannel", outputChannel = "enrichedLogChannel")
+    @Transformer(inputChannel = "errorLogChannel", outputChannel = "processedLogChannel")
     public Message<LogEventDto> enrichErrorLog(Message<LogEventDto> message) {
         return enrichLog(message, "ERROR");
     }
 
-    @Transformer(inputChannel = "warnLogChannel", outputChannel = "enrichedLogChannel")
+    @Transformer(inputChannel = "warnLogChannel", outputChannel = "processedLogChannel")
     public Message<LogEventDto> enrichWarnLog(Message<LogEventDto> message) {
         return enrichLog(message, "WARN");
     }
 
-    @Transformer(inputChannel = "infoLogChannel", outputChannel = "enrichedLogChannel")
+    @Transformer(inputChannel = "infoLogChannel", outputChannel = "processedLogChannel")
     public Message<LogEventDto> enrichInfoLog(Message<LogEventDto> message) {
         return enrichLog(message, "INFO");
     }
 
-    @Transformer(inputChannel = "debugLogChannel", outputChannel = "enrichedLogChannel")
+    @Transformer(inputChannel = "debugLogChannel", outputChannel = "processedLogChannel")
     public Message<LogEventDto> enrichDebugLog(Message<LogEventDto> message) {
         return enrichLog(message, "DEBUG");
     }

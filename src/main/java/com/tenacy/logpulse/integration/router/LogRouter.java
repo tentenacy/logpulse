@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import java.util.Map;
 
 @Slf4j
+@Component
 public class LogRouter {
 
     private final MessageChannel errorLogChannel;
@@ -35,12 +36,12 @@ public class LogRouter {
         );
     }
 
-    @Router
+    @Router(inputChannel = "logInputChannel")
     public MessageChannel routeByLogLevel(Message<LogEventDto> message) {
         LogEventDto logEvent = message.getPayload();
         String logLevel = logEvent.getLogLevel().toUpperCase();
 
-        log.debug("Routing log event with level {} to appropriate channel", logLevel);
+        log.debug("로그 레벨 {}에 따라 적절한 채널로 라우팅", logLevel);
 
         return channelMap.getOrDefault(logLevel, infoLogChannel);
     }

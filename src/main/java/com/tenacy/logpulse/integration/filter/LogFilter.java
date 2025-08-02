@@ -1,28 +1,18 @@
 package com.tenacy.logpulse.integration.filter;
 
 import com.tenacy.logpulse.api.dto.LogEventDto;
-import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.MeterRegistry;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.integration.annotation.Filter;
 import org.springframework.messaging.Message;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
 import java.util.List;
 
 @Component
-@RequiredArgsConstructor
 @Slf4j
 public class LogFilter {
-
-    private final Counter filterReceivedCounter;
-    private final Counter filterPassedCounter;
-    private final Counter filterRejectedCounter;
-    private final MeterRegistry meterRegistry;
 
     @Value("${logpulse.filter.excluded-sources:}")
     private String excludedSourcesString;
@@ -36,64 +26,37 @@ public class LogFilter {
     public void setExcludedSources(String sources) {
         if (sources != null && !sources.isEmpty()) {
             excludedSources = Arrays.asList(sources.split(","));
-            log.info("Configured excluded sources: {}", excludedSources);
+            log.info("제외된 소스 설정: {}", excludedSources);
         } else {
             excludedSources = List.of();
-            log.info("No excluded sources configured");
+            log.info("제외된 소스 없음");
         }
     }
 
-    @Filter(inputChannel = "enrichedLogChannel", outputChannel = "filteredLogChannel")
+    @Filter(inputChannel = "processedLogChannel", outputChannel = "processedLogChannel")
     public boolean filterLog(Message<LogEventDto> message) {
-        // 수신 카운터 증가
-        filterReceivedCounter.increment();
-
         LogEventDto logEvent = message.getPayload();
 
-        // performance-test 소스는 항상 통과시킴 (성능 테스트용)
+        // 성능 테스트 소스는 항상 통과
         if ("performance-test".equals(logEvent.getSource())) {
-            // 통과 카운터 증가
-            filterPassedCounter.increment();
-
-            // 소스별 통과 카운터
-            meterRegistry.counter("logpulse.filter.source.passed", "source", "performance-test").increment();
-
             return true;
         }
 
+        // 제외된 소스 필터링
         if (excludedSources != null && excludedSources.contains(logEvent.getSource())) {
-            log.debug("Filtering out log from excluded source: {}", logEvent.getSource());
-
-            // 거부 카운터 증가
-            filterRejectedCounter.increment();
-
-            // 소스별 거부 카운터
-            meterRegistry.counter("logpulse.filter.source.rejected", "source", logEvent.getSource()).increment();
-
+            log.debug("제외된 소스의 로그 필터링: {}", logEvent.getSource());
             return false;
         }
 
+        // 로그 레벨 필터링
         int logLevelValue = getLogLevelValue(logEvent.getLogLevel());
         int minLevelValue = getLogLevelValue(minLogLevel);
 
         boolean passes = logLevelValue >= minLevelValue;
 
         if (!passes) {
-            log.debug("Filtering out log with level {} below minimum level {}",
-                    logEvent.getLogLevel(), minLogLevel);
-
-            // 거부 카운터 증가
-            filterRejectedCounter.increment();
-
-            // 레벨별 거부 카운터
-            meterRegistry.counter("logpulse.filter.level.rejected", "level", logEvent.getLogLevel()).increment();
-
-        } else {
-            // 통과 카운터 증가
-            filterPassedCounter.increment();
-
-            // 레벨별 통과 카운터
-            meterRegistry.counter("logpulse.filter.level.passed", "level", logEvent.getLogLevel()).increment();
+            log.debug("최소 레벨 {} 미만의 로그 레벨 {} 필터링",
+                    minLogLevel, logEvent.getLogLevel());
         }
 
         return passes;
@@ -111,20 +74,5 @@ public class LogFilter {
             case "DEBUG" -> 1;
             default -> 0;
         };
-    }
-
-    @Scheduled(fixedRate = 60000)
-    public void logStats() {
-        double received = filterReceivedCounter.count();
-        double passed = filterPassedCounter.count();
-        double rejected = filterRejectedCounter.count();
-
-        if (received > 0) {
-            double passRate = (passed / received) * 100.0;
-            double rejectRate = (rejected / received) * 100.0;
-
-            log.info("Filter stats - Received: {}, Passed: {} ({:.2f}%), Rejected: {} ({:.2f}%)",
-                    (long)received, (long)passed, passRate, (long)rejected, rejectRate);
-        }
     }
 }
