@@ -15,9 +15,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * 로그 압축 통계 API 컨트롤러
- */
 @RestController
 @RequestMapping("/api/v1/stats/compression")
 @RequiredArgsConstructor
@@ -26,9 +23,6 @@ public class CompressionStatsController {
 
     private final CompressionStatsService compressionStatsService;
 
-    /**
-     * 전체 압축 통계 요약 조회
-     */
     @GetMapping("/summary")
     public ResponseEntity<Map<String, Object>> getCompressionSummary() {
         Map<String, Object> stats = compressionStatsService.getOverallCompressionStats();
@@ -40,9 +34,6 @@ public class CompressionStatsController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * 특정 날짜의 압축 통계 조회
-     */
     @GetMapping("/daily")
     public ResponseEntity<Map<String, Object>> getDailyCompressionStats(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
@@ -58,9 +49,6 @@ public class CompressionStatsController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * 날짜 범위의 압축 통계 조회
-     */
     @GetMapping("/range")
     public ResponseEntity<Map<String, Object>> getCompressionStatsForRange(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
