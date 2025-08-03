@@ -2,7 +2,6 @@ package com.tenacy.logpulse.config;
 
 import com.tenacy.logpulse.batch.LogArchiveProcessor;
 import com.tenacy.logpulse.domain.LogEntry;
-import com.tenacy.logpulse.service.LogCompressionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
@@ -32,7 +31,6 @@ public class LogArchiveJobConfig {
     private final JobRepository jobRepository;
     private final PlatformTransactionManager transactionManager;
     private final DataSource dataSource;
-    private final LogCompressionService logCompressionService;
 
     @Value("${logpulse.batch.chunk-size:100}")
     private int chunkSize;

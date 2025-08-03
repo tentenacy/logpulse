@@ -16,7 +16,7 @@ public class LogArchiveProcessor implements ItemProcessor<LogEntry, LogEntry> {
 
     @Override
     public LogEntry process(LogEntry item) {
-        log.debug("Archiving log entry: {}", item.getId());
+        log.debug("로그 항목 아카이빙: {}", item.getId());
 
         // 이미 압축된 로그면 그대로 반환
         if (Boolean.TRUE.equals(item.getCompressed())) {
@@ -40,7 +40,7 @@ public class LogArchiveProcessor implements ItemProcessor<LogEntry, LogEntry> {
                 item.setOriginalSize(originalSize);
                 item.setCompressedSize(compressedSize);
 
-                log.debug("Compressed log content for archive - ID: {}, Original size: {}, Compressed size: {}, Ratio: {}%",
+                log.debug("아카이브용 로그 내용 압축 - ID: {}, 원본 크기: {}, 압축 크기: {}, 비율: {}%",
                         item.getId(), originalSize, compressedSize,
                         Math.round((1 - (double)compressedSize/originalSize) * 100));
             } else {
@@ -48,7 +48,7 @@ public class LogArchiveProcessor implements ItemProcessor<LogEntry, LogEntry> {
                 item.setCompressed(false);
                 item.setOriginalSize(originalSize);
                 item.setCompressedSize(originalSize);
-                log.debug("Compression skipped for log ID: {} - ineffective compression", item.getId());
+                log.debug("로그 ID: {}에 대한 압축 건너뜀 - 비효율적인 압축", item.getId());
             }
         } else {
             // 압축할 만한 크기가 아닌 경우
@@ -58,7 +58,7 @@ public class LogArchiveProcessor implements ItemProcessor<LogEntry, LogEntry> {
                 item.setCompressedSize(size);
             }
             item.setCompressed(false);
-            log.debug("Compression skipped for log ID: {} - content too small", item.getId());
+            log.debug("로그 ID: {}에 대한 압축 건너뜀 - 콘텐츠가 너무 작음", item.getId());
         }
 
         return item;

@@ -39,9 +39,9 @@ public class BatchScheduler {
                     .toJobParameters();
 
             jobLauncher.run(logArchiveJob, jobParameters);
-            log.info("Log archive job completed successfully");
+            log.info("로그 아카이브 작업이 성공적으로 완료되었습니다");
         } catch (Exception e) {
-            log.error("Error running log archive job", e);
+            log.error("로그 아카이브 작업 실행 중 오류 발생", e);
         }
     }
 
@@ -52,9 +52,9 @@ public class BatchScheduler {
                     .toJobParameters();
 
             jobLauncher.run(logStatisticsJob, jobParameters);
-            log.info("Log statistics job completed successfully");
+            log.info("로그 통계 작업이 성공적으로 완료되었습니다");
         } catch (Exception e) {
-            log.error("Error running log statistics job", e);
+            log.error("로그 통계 작업 실행 중 오류 발생", e);
         }
     }
 }
