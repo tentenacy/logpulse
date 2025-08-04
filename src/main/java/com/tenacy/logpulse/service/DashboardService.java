@@ -16,8 +16,10 @@ import java.lang.management.ManagementFactory;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -42,26 +44,18 @@ public class DashboardService {
         // 소스별 통계
         Map<String, Object> sourceStats = getSourceStats(startTime, endTime);
 
-        // 소스별 레벨 통계
-        Map<String, Object> sourceLevelStats = getSourceLevelStats(startTime, endTime);
-
         // 시스템 상태
         SystemStatusResponse systemStatus = getSystemStatus();
 
         // 최근 오류 로그
         Map<String, Object> recentErrors = getRecentErrors();
 
-        // 오류 추세
-        Map<String, Object> errorTrends = getErrorTrends(startTime, endTime);
-
         return DashboardStatsResponse.builder()
                 .logCounts(logCounts)
                 .hourlyStats(hourlyStats)
                 .sourceStats(sourceStats)
-                .sourceLevelStats(sourceLevelStats)
                 .systemStatus(systemStatus)
                 .recentErrors(recentErrors)
-                .errorTrends(errorTrends)
                 .timestamp(LocalDateTime.now())
                 .build();
     }
@@ -151,7 +145,7 @@ public class DashboardService {
             return result;
         } catch (Exception e) {
             log.error("시간별 통계 조회 중 오류 발생", e);
-            return Map.of("date", date, "hourlyStats", Collections.emptyList());
+            return Map.of("date", date, "hourlyStats", List.of());
         }
     }
 
@@ -184,65 +178,7 @@ public class DashboardService {
             return Map.of(
                     "startTime", start,
                     "endTime", end,
-                    "sourceStats", Collections.emptyList()
-            );
-        }
-    }
-
-    public Map<String, Object> getSourceLevelStats(LocalDateTime start, LocalDateTime end) {
-        try {
-            // 기본 시간 범위 설정 (기본: 최근 24시간)
-            LocalDateTime endTime = end != null ? end : LocalDateTime.now();
-            LocalDateTime startTime = start != null ? start : endTime.minusHours(24);
-
-            // 소스별 총 로그 수 조회
-            List<Object[]> sourceData = logRepository.findSourceStatsWithTimePeriod(startTime, endTime);
-
-            List<Map<String, Object>> sourceLevelStats = new ArrayList<>();
-
-            for (Object[] sourceRow : sourceData) {
-                String source = (String) sourceRow[0];
-                Long totalCount = (Long) sourceRow[1];
-
-                // 각 소스별 로그 레벨 수 조회
-                Long errorCount = logRepository.countByLogLevelAndSourceContainingAndCreatedAtBetween(
-                        "ERROR", source, startTime, endTime);
-                Long warnCount = logRepository.countByLogLevelAndSourceContainingAndCreatedAtBetween(
-                        "WARN", source, startTime, endTime);
-                Long infoCount = logRepository.countByLogLevelAndSourceContainingAndCreatedAtBetween(
-                        "INFO", source, startTime, endTime);
-                Long debugCount = logRepository.countByLogLevelAndSourceContainingAndCreatedAtBetween(
-                        "DEBUG", source, startTime, endTime);
-
-                // 오류율 계산
-                double errorRate = totalCount > 0 ? (double) errorCount / totalCount * 100 : 0;
-
-                Map<String, Object> stat = new HashMap<>();
-                stat.put("source", source);
-                stat.put("total", totalCount);
-                stat.put("error", errorCount);
-                stat.put("warn", warnCount);
-                stat.put("info", infoCount);
-                stat.put("debug", debugCount);
-                stat.put("errorRate", Math.round(errorRate * 100.0) / 100.0); // 소수점 둘째자리까지
-
-                sourceLevelStats.add(stat);
-            }
-
-            // 총 로그 수 기준 내림차순 정렬
-            sourceLevelStats.sort((a, b) -> Long.compare((Long) b.get("total"), (Long) a.get("total")));
-
-            Map<String, Object> result = new HashMap<>();
-            result.put("startTime", startTime);
-            result.put("endTime", endTime);
-            result.put("sourceLevelStats", sourceLevelStats);
-            return result;
-        } catch (Exception e) {
-            log.error("소스별 로그 레벨 통계 조회 중 오류 발생", e);
-            return Map.of(
-                    "startTime", start,
-                    "endTime", end,
-                    "sourceLevelStats", Collections.emptyList()
+                    "sourceStats", List.of()
             );
         }
     }
@@ -276,15 +212,12 @@ public class DashboardService {
             // 오류율 계산
             double errorRate = totalLogs > 0 ? (double) errorLogs / totalLogs * 100 : 0;
 
-            // 평균 처리율 계산 (로그 수 / 시간)
-            double processedRate = totalLogs / 24.0;
-
             return SystemStatusResponse.builder()
                     .uptime(uptimeString)
                     .memoryUsage(Math.round(memoryUsagePercent * 100.0) / 100.0)
-                    .processedRate(Math.round(processedRate))
+                    .processedRate(totalLogs / 24)
                     .errorRate(Math.round(errorRate * 100.0) / 100.0)
-                    .avgResponseTime((int) (Math.random() * 200) + 50) // 예시 응답 시간
+                    .avgResponseTime(0)
                     .status("UP")
                     .timestamp(LocalDateTime.now())
                     .build();
@@ -320,59 +253,7 @@ public class DashboardService {
             log.error("최근 오류 로그 조회 중 오류 발생", e);
             return Map.of(
                     "timestamp", LocalDateTime.now(),
-                    "recentErrors", Collections.emptyList()
-            );
-        }
-    }
-
-    public Map<String, Object> getErrorTrends(LocalDateTime start, LocalDateTime end) {
-        try {
-            // 기본 시간 범위 설정 (기본: 최근 7일)
-            LocalDateTime endTime = end != null ? end : LocalDateTime.now();
-            LocalDateTime startTime = start != null ? start : endTime.minusDays(7);
-
-            // 날짜 차이 계산
-            long daysBetween = ChronoUnit.DAYS.between(startTime.toLocalDate(), endTime.toLocalDate()) + 1;
-
-            // 일별 통계 데이터 생성
-            List<Map<String, Object>> dailyStats = new ArrayList<>();
-
-            for (int i = 0; i < daysBetween; i++) {
-                LocalDate currentDate = startTime.toLocalDate().plusDays(i);
-                LocalDateTime dayStart = currentDate.atStartOfDay();
-                LocalDateTime dayEnd = dayStart.plusDays(1);
-
-                // 전체 로그 수
-                long totalLogs = logRepository.countByCreatedAtBetween(dayStart, dayEnd);
-
-                // 오류 로그 수
-                long errorLogs = logRepository.countByLogLevelAndCreatedAtBetween("ERROR", dayStart, dayEnd);
-
-                // 오류율 계산
-                double errorRate = totalLogs > 0 ? (double) errorLogs / totalLogs * 100 : 0;
-
-                Map<String, Object> dayStat = new HashMap<>();
-                dayStat.put("date", currentDate);
-                dayStat.put("totalLogs", totalLogs);
-                dayStat.put("errorLogs", errorLogs);
-                dayStat.put("errorRate", Math.round(errorRate * 100.0) / 100.0);
-
-                dailyStats.add(dayStat);
-            }
-
-            Map<String, Object> result = new HashMap<>();
-            result.put("startTime", startTime);
-            result.put("endTime", endTime);
-            result.put("daysBetween", daysBetween);
-            result.put("dailyStats", dailyStats);
-            return result;
-        } catch (Exception e) {
-            log.error("오류 추세 정보 조회 중 오류 발생", e);
-            return Map.of(
-                    "startTime", start,
-                    "endTime", end,
-                    "daysBetween", 0,
-                    "dailyStats", Collections.emptyList()
+                    "recentErrors", List.of()
             );
         }
     }

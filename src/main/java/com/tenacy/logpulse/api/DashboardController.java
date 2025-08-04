@@ -63,15 +63,6 @@ public class DashboardController {
         return ResponseEntity.ok(sourceStats);
     }
 
-    @GetMapping("/source-level-stats")
-    public ResponseEntity<Map<String, Object>> getSourceLevelStats(
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end) {
-
-        Map<String, Object> sourceLevelStats = dashboardService.getSourceLevelStats(start, end);
-        return ResponseEntity.ok(sourceLevelStats);
-    }
-
     @GetMapping("/system-status")
     public ResponseEntity<SystemStatusResponse> getSystemStatus() {
         SystemStatusResponse systemStatus = dashboardService.getSystemStatus();
@@ -82,14 +73,5 @@ public class DashboardController {
     public ResponseEntity<Map<String, Object>> getRecentErrors() {
         Map<String, Object> recentErrors = dashboardService.getRecentErrors();
         return ResponseEntity.ok(recentErrors);
-    }
-
-    @GetMapping("/error-trends")
-    public ResponseEntity<Map<String, Object>> getErrorTrends(
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end) {
-
-        Map<String, Object> errorTrends = dashboardService.getErrorTrends(start, end);
-        return ResponseEntity.ok(errorTrends);
     }
 }

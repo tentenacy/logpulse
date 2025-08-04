@@ -38,9 +38,9 @@ public class FileLogCollectorService {
         if (!Files.exists(dir)) {
             try {
                 Files.createDirectories(dir);
-                log.info("Created logs directory: {}", dir);
+                log.info("로그 디렉토리 생성: {}", dir);
             } catch (IOException e) {
-                log.error("Failed to create logs directory: {}", dir, e);
+                log.error("로그 디렉토리 생성 실패: {}", dir, e);
                 return;
             }
         }
@@ -51,7 +51,7 @@ public class FileLogCollectorService {
                 processLogFile(path);
             }
         } catch (IOException e) {
-            log.error("Failed to scan logs directory: {}", dir, e);
+            log.error("로그 디렉토리 스캔 실패: {}", dir, e);
         }
     }
 
@@ -67,22 +67,21 @@ public class FileLogCollectorService {
                     file.seek(position);
                     String line;
                     while ((line = file.readLine()) != null) {
-                        // 간단한 로그 파싱
-                        // 추후 더 복잡한 파싱 로직으로 구현 예정
+                        // 로그 파싱 및 처리
                         processLogLine(path.getFileName().toString(), line);
                         position = file.getFilePointer();
                     }
                 }
                 filePositions.put(fileName, position);
-                log.debug("Processed log file: {}, new position: {}", fileName, position);
+                log.debug("로그 파일 처리: {}, 새 위치: {}", fileName, position);
             }
         } catch (IOException e) {
-            log.error("Failed to process log file: {}", fileName, e);
+            log.error("로그 파일 처리 실패: {}", fileName, e);
         }
     }
 
     private void processLogLine(String source, String line) {
-        // 간단히 로그 레벨을 추출
+        // 로그 레벨 추출
         String logLevel = "INFO";
         if (line.contains("ERROR")) {
             logLevel = "ERROR";
@@ -99,7 +98,7 @@ public class FileLogCollectorService {
                 .timestamp(LocalDateTime.now())
                 .build();
 
-        // IntegrationLogService를 통해 로그 처리 파이프라인으로 전달
+        // 로그 처리 파이프라인으로 전달
         integrationLogService.processLog(logEventDto);
     }
 }
