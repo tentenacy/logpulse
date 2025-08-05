@@ -3,6 +3,7 @@ package com.tenacy.logpulse.config;
 import com.tenacy.logpulse.batch.LogStatisticsProcessor;
 import com.tenacy.logpulse.domain.LogEntry;
 import com.tenacy.logpulse.domain.LogStatistics;
+import com.tenacy.logpulse.domain.LogStatisticsRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
@@ -23,6 +24,10 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Configuration
 @RequiredArgsConstructor
@@ -32,6 +37,7 @@ public class LogStatisticsJobConfig {
     private final JobRepository jobRepository;
     private final PlatformTransactionManager transactionManager;
     private final DataSource dataSource;
+    private final LogStatisticsRepository logStatisticsRepository;
 
     @Value("${logpulse.batch.chunk-size:100}")
     private int chunkSize;
@@ -49,7 +55,12 @@ public class LogStatisticsJobConfig {
                 .<LogEntry, LogStatistics>chunk(chunkSize, transactionManager)
                 .reader(todayLogsReader())
                 .processor(logStatisticsProcessor())
-                .writer(statisticsWriter())
+                .writer(items -> {
+                    // 일별 통계 백업 로직만 남기고, 실시간 통계 로직은 제거
+                    List<LogStatistics> consolidatedStats = consolidateStatistics((List<LogStatistics>)items);
+                    // 통합된 통계만 저장 (중복 방지)
+                    logStatisticsRepository.saveAll(consolidatedStats);
+                })
                 .build();
     }
 
@@ -86,5 +97,25 @@ public class LogStatisticsJobConfig {
                         "VALUES (:logDate, :source, :logLevel, :count, NOW())")
                 .beanMapped()
                 .build();
+    }
+
+    private List<LogStatistics> consolidateStatistics(List<LogStatistics> items) {
+        Map<String, LogStatistics> statsMap = new HashMap<>();
+
+        for (LogStatistics stat : items) {
+            String key = stat.getLogDate() + "|" + stat.getHour() + "|" +
+                    stat.getSource() + "|" + stat.getLogLevel();
+
+            if (statsMap.containsKey(key)) {
+                // 기존 통계 업데이트
+                LogStatistics existing = statsMap.get(key);
+                existing.setCount(existing.getCount() + stat.getCount());
+            } else {
+                // 새 통계 추가
+                statsMap.put(key, stat);
+            }
+        }
+
+        return new ArrayList<>(statsMap.values());
     }
 }

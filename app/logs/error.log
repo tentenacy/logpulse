@@ -1,0 +1,167 @@
+2025-08-07 19:22:19.000 [Thread-13] ERROR com.logpulse.order-service.error.Service1 - Cache invalidation error: Redis connection lost
+2025-08-07 19:45:13.000 [Thread-7] ERROR com.logpulse.api-gateway.error.Service4 - Order processing failed: Product ID 554 not found
+2025-08-08 01:02:50.000 [Thread-15] ERROR com.logpulse.file-service.error.Service1 - Memory allocation error: OutOfMemoryError in image processing
+2025-08-07 21:13:59.000 [Thread-12] ERROR com.logpulse.file-service.error.Service1 - Database connection failed: Connection timeout after 30 seconds
+2025-08-07 20:40:46.000 [Thread-20] ERROR com.logpulse.email-service.error.Service4 - External API call failed: HTTP 500 from payment gateway
+2025-08-08 00:41:04.000 [Thread-1] ERROR com.logpulse.notification-service.error.Service2 - Memory allocation error: OutOfMemoryError in image processing
+2025-08-07 21:11:27.000 [Thread-15] ERROR com.logpulse.analytics-service.error.Service5 - Memory allocation error: OutOfMemoryError in image processing
+2025-08-08 03:07:53.000 [Thread-9] ERROR com.logpulse.file-service.error.Service1 - Order processing failed: Product ID 978 not found
+2025-08-07 23:18:22.000 [Thread-20] ERROR com.logpulse.inventory-service.error.Service4 - Failed to process payment for user ID: 4655. Reason: Insufficient funds
+2025-08-07 20:53:12.000 [Thread-1] ERROR com.logpulse.notification-service.error.Service4 - Order processing failed: Product ID 361 not found
+2025-08-07 18:49:11.000 [Thread-10] ERROR com.logpulse.payment-service.error.Service3 - External API call failed: HTTP 500 from payment gateway
+2025-08-07 18:58:35.000 [Thread-1] ERROR com.logpulse.user-service.error.Service1 - Memory allocation error: OutOfMemoryError in image processing
+2025-08-07 19:23:38.000 [Thread-17] ERROR com.logpulse.user-service.error.Service2 - File upload failed: Maximum file size exceeded for user 707
+2025-08-08 03:12:57.000 [Thread-5] ERROR com.logpulse.api-gateway.error.Service3 - Cache invalidation error: Redis connection lost
+2025-08-08 02:57:35.000 [Thread-13] ERROR com.logpulse.analytics-service.error.Service1 - Failed to process payment for user ID: 2812. Reason: Insufficient funds
+2025-08-08 02:32:46.000 [Thread-20] ERROR com.logpulse.order-service.error.Service5 - Security violation detected: Multiple failed login attempts from IP 192.168.117.29
+2025-08-07 23:37:02.000 [Thread-5] ERROR com.logpulse.order-service.error.Service5 - Memory allocation error: OutOfMemoryError in image processing
+2025-08-07 22:08:00.000 [Thread-19] ERROR com.logpulse.api-gateway.error.Service5 - File upload failed: Maximum file size exceeded for user 2497
+2025-08-08 00:38:18.000 [Thread-19] ERROR com.logpulse.file-service.error.Service1 - Cache invalidation error: Redis connection lost
+2025-08-08 03:09:10.000 [Thread-8] ERROR com.logpulse.email-service.error.Service2 - Order processing failed: Product ID 374 not found
+2025-08-07 20:08:54.000 [Thread-18] ERROR com.logpulse.api-gateway.error.Service3 - Failed to process payment for user ID: 1287. Reason: Insufficient funds
+2025-08-07 23:34:49.000 [Thread-4] ERROR com.logpulse.inventory-service.error.Service5 - File upload failed: Maximum file size exceeded for user 7754
+2025-08-07 22:39:15.000 [Thread-8] ERROR com.logpulse.email-service.error.Service1 - Failed to send notification email: SMTP server unavailable
+2025-08-07 23:32:28.000 [Thread-4] ERROR com.logpulse.auth-service.error.Service1 - Security violation detected: Multiple failed login attempts from IP 192.168.105.52
+2025-08-08 03:14:32.000 [Thread-8] ERROR com.logpulse.email-service.error.Service2 - Failed to send notification email: SMTP server unavailable
+2025-08-07 21:52:23.000 [Thread-3] ERROR com.logpulse.auth-service.error.Service4 - Database connection failed: Connection timeout after 30 seconds
+2025-08-07 22:24:19.000 [Thread-13] ERROR com.logpulse.user-service.error.Service5 - External API call failed: HTTP 500 from payment gateway
+2025-08-07 20:48:18.000 [Thread-16] ERROR com.logpulse.email-service.error.Service3 - External API call failed: HTTP 500 from payment gateway
+2025-08-08 00:03:04.000 [Thread-3] ERROR com.logpulse.inventory-service.error.Service2 - Memory allocation error: OutOfMemoryError in image processing
+2025-08-07 20:14:31.000 [Thread-5] ERROR com.logpulse.analytics-service.error.Service5 - Memory allocation error: OutOfMemoryError in image processing
+2025-08-08 03:42:07.000 [Thread-11] ERROR com.logpulse.email-service.error.Service4 - Cache invalidation error: Redis connection lost
+2025-08-08 02:11:42.000 [Thread-3] ERROR com.logpulse.auth-service.error.Service2 - Order processing failed: Product ID 80 not found
+2025-08-07 22:10:39.000 [Thread-9] ERROR com.logpulse.file-service.error.Service5 - Security violation detected: Multiple failed login attempts from IP 192.168.165.34
+2025-08-07 23:01:50.000 [Thread-18] ERROR com.logpulse.analytics-service.error.Service1 - NullPointerException in user authentication: Invalid session token
+2025-08-07 22:28:58.000 [Thread-1] ERROR com.logpulse.auth-service.error.Service2 - Failed to process payment for user ID: 1248. Reason: Insufficient funds
+2025-08-08 02:15:14.000 [Thread-9] ERROR com.logpulse.file-service.error.Service1 - Failed to process payment for user ID: 9663. Reason: Insufficient funds
+2025-08-08 02:02:25.000 [Thread-15] ERROR com.logpulse.api-gateway.error.Service5 - Order processing failed: Product ID 115 not found
+2025-08-08 00:10:50.000 [Thread-12] ERROR com.logpulse.notification-service.error.Service4 - File upload failed: Maximum file size exceeded for user 7002
+2025-08-08 02:36:53.000 [Thread-10] ERROR com.logpulse.payment-service.error.Service4 - Security violation detected: Multiple failed login attempts from IP 192.168.253.64
+2025-08-07 18:56:04.000 [Thread-18] ERROR com.logpulse.notification-service.error.Service2 - Failed to process payment for user ID: 8673. Reason: Insufficient funds
+2025-08-07 19:44:48.000 [Thread-9] ERROR com.logpulse.api-gateway.error.Service4 - Order processing failed: Product ID 41 not found
+2025-08-08 00:45:35.000 [Thread-18] ERROR com.logpulse.order-service.error.Service5 - Failed to process payment for user ID: 533. Reason: Insufficient funds
+2025-08-07 20:58:05.000 [Thread-9] ERROR com.logpulse.api-gateway.error.Service5 - Security violation detected: Multiple failed login attempts from IP 192.168.76.175
+2025-08-07 21:39:03.000 [Thread-1] ERROR com.logpulse.inventory-service.error.Service3 - Security violation detected: Multiple failed login attempts from IP 192.168.200.185
+2025-08-07 22:38:03.000 [Thread-5] ERROR com.logpulse.file-service.error.Service5 - External API call failed: HTTP 500 from payment gateway
+2025-08-07 20:18:01.000 [Thread-1] ERROR com.logpulse.payment-service.error.Service4 - Failed to process payment for user ID: 3335. Reason: Insufficient funds
+2025-08-07 19:20:32.000 [Thread-16] ERROR com.logpulse.file-service.error.Service1 - Cache invalidation error: Redis connection lost
+2025-08-07 21:12:33.000 [Thread-19] ERROR com.logpulse.notification-service.error.Service4 - Security violation detected: Multiple failed login attempts from IP 192.168.222.9
+2025-08-07 21:42:16.000 [Thread-5] ERROR com.logpulse.inventory-service.error.Service2 - Failed to send notification email: SMTP server unavailable
+2025-08-08 03:19:11.000 [Thread-5] ERROR com.logpulse.analytics-service.error.Service5 - Memory allocation error: OutOfMemoryError in image processing
+2025-08-07 20:13:34.000 [Thread-5] ERROR com.logpulse.user-service.error.Service2 - Order processing failed: Product ID 585 not found
+2025-08-07 21:00:25.000 [Thread-5] ERROR com.logpulse.notification-service.error.Service1 - External API call failed: HTTP 500 from payment gateway
+2025-08-07 20:15:12.000 [Thread-2] ERROR com.logpulse.inventory-service.error.Service4 - Cache invalidation error: Redis connection lost
+2025-08-07 20:22:56.000 [Thread-11] ERROR com.logpulse.order-service.error.Service3 - External API call failed: HTTP 500 from payment gateway
+2025-08-07 19:42:22.000 [Thread-6] ERROR com.logpulse.api-gateway.error.Service2 - NullPointerException in user authentication: Invalid session token
+2025-08-08 00:08:39.000 [Thread-15] ERROR com.logpulse.email-service.error.Service5 - File upload failed: Maximum file size exceeded for user 6279
+2025-08-07 23:07:17.000 [Thread-14] ERROR com.logpulse.file-service.error.Service3 - External API call failed: HTTP 500 from payment gateway
+2025-08-07 20:37:43.000 [Thread-2] ERROR com.logpulse.inventory-service.error.Service1 - External API call failed: HTTP 500 from payment gateway
+2025-08-08 02:41:29.000 [Thread-20] ERROR com.logpulse.user-service.error.Service2 - Memory allocation error: OutOfMemoryError in image processing
+2025-08-08 02:58:27.000 [Thread-20] ERROR com.logpulse.file-service.error.Service1 - Database connection failed: Connection timeout after 30 seconds
+2025-08-07 21:28:41.000 [Thread-10] ERROR com.logpulse.api-gateway.error.Service4 - NullPointerException in user authentication: Invalid session token
+2025-08-07 20:18:33.000 [Thread-3] ERROR com.logpulse.user-service.error.Service5 - Failed to send notification email: SMTP server unavailable
+2025-08-07 21:18:55.000 [Thread-6] ERROR com.logpulse.email-service.error.Service4 - NullPointerException in user authentication: Invalid session token
+2025-08-07 23:36:12.000 [Thread-3] ERROR com.logpulse.email-service.error.Service3 - Order processing failed: Product ID 289 not found
+2025-08-08 01:14:36.000 [Thread-16] ERROR com.logpulse.email-service.error.Service5 - File upload failed: Maximum file size exceeded for user 5780
+2025-08-08 02:30:08.000 [Thread-12] ERROR com.logpulse.notification-service.error.Service4 - Memory allocation error: OutOfMemoryError in image processing
+2025-08-07 21:51:34.000 [Thread-11] ERROR com.logpulse.file-service.error.Service3 - Cache invalidation error: Redis connection lost
+2025-08-07 23:10:52.000 [Thread-4] ERROR com.logpulse.api-gateway.error.Service2 - Database connection failed: Connection timeout after 30 seconds
+2025-08-07 23:54:20.000 [Thread-18] ERROR com.logpulse.notification-service.error.Service1 - Memory allocation error: OutOfMemoryError in image processing
+2025-08-08 00:58:06.000 [Thread-10] ERROR com.logpulse.user-service.error.Service5 - Security violation detected: Multiple failed login attempts from IP 192.168.52.10
+2025-08-07 22:03:52.000 [Thread-8] ERROR com.logpulse.file-service.error.Service3 - Failed to send notification email: SMTP server unavailable
+2025-08-07 22:01:03.000 [Thread-18] ERROR com.logpulse.order-service.error.Service4 - Security violation detected: Multiple failed login attempts from IP 192.168.118.245
+2025-08-08 03:17:05.000 [Thread-11] ERROR com.logpulse.user-service.error.Service2 - Cache invalidation error: Redis connection lost
+2025-08-07 20:22:25.000 [Thread-1] ERROR com.logpulse.order-service.error.Service3 - Order processing failed: Product ID 964 not found
+2025-08-08 01:02:28.000 [Thread-15] ERROR com.logpulse.order-service.error.Service2 - Failed to send notification email: SMTP server unavailable
+2025-08-08 03:14:04.000 [Thread-10] ERROR com.logpulse.user-service.error.Service3 - File upload failed: Maximum file size exceeded for user 5038
+2025-08-07 23:45:34.000 [Thread-2] ERROR com.logpulse.order-service.error.Service5 - Order processing failed: Product ID 460 not found
+2025-08-08 02:30:56.000 [Thread-13] ERROR com.logpulse.email-service.error.Service1 - Order processing failed: Product ID 816 not found
+2025-08-08 03:05:42.000 [Thread-11] ERROR com.logpulse.order-service.error.Service2 - Order processing failed: Product ID 919 not found
+2025-08-07 23:16:09.000 [Thread-20] ERROR com.logpulse.email-service.error.Service5 - External API call failed: HTTP 500 from payment gateway
+2025-08-08 01:16:37.000 [Thread-7] ERROR com.logpulse.payment-service.error.Service2 - Failed to process payment for user ID: 7998. Reason: Insufficient funds
+2025-08-08 01:37:40.000 [Thread-8] ERROR com.logpulse.notification-service.error.Service4 - Security violation detected: Multiple failed login attempts from IP 192.168.69.115
+2025-08-07 21:09:27.000 [Thread-4] ERROR com.logpulse.payment-service.error.Service3 - NullPointerException in user authentication: Invalid session token
+2025-08-08 03:15:04.000 [Thread-14] ERROR com.logpulse.analytics-service.error.Service1 - Cache invalidation error: Redis connection lost
+2025-08-07 19:11:33.000 [Thread-4] ERROR com.logpulse.inventory-service.error.Service3 - Database connection failed: Connection timeout after 30 seconds
+2025-08-07 22:22:22.000 [Thread-12] ERROR com.logpulse.payment-service.error.Service1 - NullPointerException in user authentication: Invalid session token
+2025-08-08 02:20:20.000 [Thread-5] ERROR com.logpulse.user-service.error.Service1 - Memory allocation error: OutOfMemoryError in image processing
+2025-08-07 19:26:36.000 [Thread-2] ERROR com.logpulse.api-gateway.error.Service1 - NullPointerException in user authentication: Invalid session token
+2025-08-07 23:06:45.000 [Thread-14] ERROR com.logpulse.order-service.error.Service1 - Security violation detected: Multiple failed login attempts from IP 192.168.225.147
+2025-08-07 20:02:11.000 [Thread-7] ERROR com.logpulse.auth-service.error.Service2 - Failed to send notification email: SMTP server unavailable
+2025-08-08 00:49:38.000 [Thread-4] ERROR com.logpulse.payment-service.error.Service5 - Failed to send notification email: SMTP server unavailable
+2025-08-08 00:16:11.000 [Thread-3] ERROR com.logpulse.inventory-service.error.Service5 - Failed to send notification email: SMTP server unavailable
+2025-08-08 03:13:59.000 [Thread-12] ERROR com.logpulse.notification-service.error.Service3 - Failed to send notification email: SMTP server unavailable
+2025-08-07 23:40:38.000 [Thread-14] ERROR com.logpulse.file-service.error.Service2 - Memory allocation error: OutOfMemoryError in image processing
+2025-08-08 00:57:12.000 [Thread-13] ERROR com.logpulse.user-service.error.Service5 - Security violation detected: Multiple failed login attempts from IP 192.168.238.141
+2025-08-07 22:07:54.000 [Thread-11] ERROR com.logpulse.order-service.error.Service2 - Security violation detected: Multiple failed login attempts from IP 192.168.62.68
+2025-08-07 23:51:34.000 [Thread-20] ERROR com.logpulse.file-service.error.Service4 - Memory allocation error: OutOfMemoryError in image processing
+2025-08-08 02:54:08.000 [Thread-1] ERROR com.logpulse.notification-service.error.Service4 - Security violation detected: Multiple failed login attempts from IP 192.168.53.129
+2025-08-07 21:11:06.000 [Thread-19] ERROR com.logpulse.auth-service.error.Service2 - Cache invalidation error: Redis connection lost
+2025-08-08 00:27:42.000 [Thread-14] ERROR com.logpulse.order-service.error.Service1 - Cache invalidation error: Redis connection lost
+2025-08-08 01:59:15.000 [Thread-17] ERROR com.logpulse.file-service.error.Service2 - File upload failed: Maximum file size exceeded for user 2210
+2025-08-07 20:04:41.000 [Thread-16] ERROR com.logpulse.payment-service.error.Service3 - External API call failed: HTTP 500 from payment gateway
+2025-08-07 23:10:24.000 [Thread-15] ERROR com.logpulse.api-gateway.error.Service3 - Memory allocation error: OutOfMemoryError in image processing
+2025-08-07 22:01:12.000 [Thread-8] ERROR com.logpulse.inventory-service.error.Service4 - Cache invalidation error: Redis connection lost
+2025-08-07 19:06:46.000 [Thread-8] ERROR com.logpulse.user-service.error.Service2 - Database connection failed: Connection timeout after 30 seconds
+2025-08-07 23:31:00.000 [Thread-1] ERROR com.logpulse.analytics-service.error.Service2 - Failed to send notification email: SMTP server unavailable
+2025-08-08 03:21:54.000 [Thread-5] ERROR com.logpulse.auth-service.error.Service4 - NullPointerException in user authentication: Invalid session token
+2025-08-08 02:18:10.000 [Thread-12] ERROR com.logpulse.user-service.error.Service2 - NullPointerException in user authentication: Invalid session token
+2025-08-07 21:31:23.000 [Thread-18] ERROR com.logpulse.payment-service.error.Service5 - Failed to send notification email: SMTP server unavailable
+2025-08-08 03:37:34.000 [Thread-1] ERROR com.logpulse.api-gateway.error.Service5 - Database connection failed: Connection timeout after 30 seconds
+2025-08-07 22:38:12.000 [Thread-3] ERROR com.logpulse.user-service.error.Service3 - Security violation detected: Multiple failed login attempts from IP 192.168.163.135
+2025-08-07 19:28:09.000 [Thread-5] ERROR com.logpulse.file-service.error.Service5 - Memory allocation error: OutOfMemoryError in image processing
+2025-08-07 22:26:33.000 [Thread-9] ERROR com.logpulse.inventory-service.error.Service3 - Memory allocation error: OutOfMemoryError in image processing
+2025-08-07 19:30:34.000 [Thread-8] ERROR com.logpulse.inventory-service.error.Service1 - Order processing failed: Product ID 806 not found
+2025-08-08 00:48:10.000 [Thread-15] ERROR com.logpulse.email-service.error.Service3 - Failed to process payment for user ID: 9051. Reason: Insufficient funds
+2025-08-07 20:26:17.000 [Thread-18] ERROR com.logpulse.api-gateway.error.Service5 - Failed to send notification email: SMTP server unavailable
+2025-08-07 21:32:10.000 [Thread-14] ERROR com.logpulse.email-service.error.Service2 - File upload failed: Maximum file size exceeded for user 3742
+2025-08-07 22:17:18.000 [Thread-4] ERROR com.logpulse.order-service.error.Service4 - Security violation detected: Multiple failed login attempts from IP 192.168.169.148
+2025-08-07 22:54:40.000 [Thread-12] ERROR com.logpulse.payment-service.error.Service2 - Memory allocation error: OutOfMemoryError in image processing
+2025-08-08 01:09:25.000 [Thread-19] ERROR com.logpulse.email-service.error.Service3 - Order processing failed: Product ID 279 not found
+2025-08-08 02:49:09.000 [Thread-1] ERROR com.logpulse.file-service.error.Service5 - NullPointerException in user authentication: Invalid session token
+2025-08-08 02:20:28.000 [Thread-8] ERROR com.logpulse.payment-service.error.Service2 - File upload failed: Maximum file size exceeded for user 6238
+2025-08-07 22:14:36.000 [Thread-8] ERROR com.logpulse.notification-service.error.Service3 - NullPointerException in user authentication: Invalid session token
+2025-08-08 01:50:28.000 [Thread-18] ERROR com.logpulse.notification-service.error.Service3 - External API call failed: HTTP 500 from payment gateway
+2025-08-08 00:16:44.000 [Thread-14] ERROR com.logpulse.auth-service.error.Service4 - Security violation detected: Multiple failed login attempts from IP 192.168.105.241
+2025-08-08 01:15:41.000 [Thread-18] ERROR com.logpulse.auth-service.error.Service2 - Failed to process payment for user ID: 8761. Reason: Insufficient funds
+2025-08-07 18:45:02.000 [Thread-20] ERROR com.logpulse.auth-service.error.Service4 - Failed to process payment for user ID: 861. Reason: Insufficient funds
+2025-08-08 01:21:07.000 [Thread-5] ERROR com.logpulse.file-service.error.Service3 - Order processing failed: Product ID 684 not found
+2025-08-07 22:57:35.000 [Thread-11] ERROR com.logpulse.auth-service.error.Service4 - Cache invalidation error: Redis connection lost
+2025-08-07 20:10:46.000 [Thread-15] ERROR com.logpulse.auth-service.error.Service1 - External API call failed: HTTP 500 from payment gateway
+2025-08-08 02:09:24.000 [Thread-15] ERROR com.logpulse.email-service.error.Service1 - File upload failed: Maximum file size exceeded for user 8480
+2025-08-07 22:11:06.000 [Thread-12] ERROR com.logpulse.email-service.error.Service1 - Cache invalidation error: Redis connection lost
+2025-08-08 01:38:23.000 [Thread-3] ERROR com.logpulse.email-service.error.Service5 - External API call failed: HTTP 500 from payment gateway
+2025-08-07 22:42:30.000 [Thread-5] ERROR com.logpulse.email-service.error.Service3 - NullPointerException in user authentication: Invalid session token
+2025-08-08 01:02:20.000 [Thread-3] ERROR com.logpulse.email-service.error.Service2 - Database connection failed: Connection timeout after 30 seconds
+2025-08-07 19:27:28.000 [Thread-13] ERROR com.logpulse.analytics-service.error.Service4 - Security violation detected: Multiple failed login attempts from IP 192.168.173.125
+2025-08-08 02:41:56.000 [Thread-8] ERROR com.logpulse.api-gateway.error.Service4 - Cache invalidation error: Redis connection lost
+2025-08-08 02:48:58.000 [Thread-16] ERROR com.logpulse.payment-service.error.Service3 - File upload failed: Maximum file size exceeded for user 2181
+2025-08-07 19:59:56.000 [Thread-14] ERROR com.logpulse.notification-service.error.Service4 - External API call failed: HTTP 500 from payment gateway
+2025-08-08 00:51:19.000 [Thread-18] ERROR com.logpulse.payment-service.error.Service1 - File upload failed: Maximum file size exceeded for user 2165
+2025-08-08 00:38:27.000 [Thread-5] ERROR com.logpulse.api-gateway.error.Service3 - NullPointerException in user authentication: Invalid session token
+2025-08-07 20:08:50.000 [Thread-8] ERROR com.logpulse.notification-service.error.Service1 - Security violation detected: Multiple failed login attempts from IP 192.168.164.12
+2025-08-08 01:08:02.000 [Thread-1] ERROR com.logpulse.notification-service.error.Service4 - Failed to process payment for user ID: 8307. Reason: Insufficient funds
+2025-08-07 22:27:09.000 [Thread-12] ERROR com.logpulse.file-service.error.Service5 - NullPointerException in user authentication: Invalid session token
+2025-08-08 01:24:41.000 [Thread-2] ERROR com.logpulse.payment-service.error.Service4 - File upload failed: Maximum file size exceeded for user 3484
+2025-08-07 23:38:41.000 [Thread-9] ERROR com.logpulse.payment-service.error.Service4 - Failed to send notification email: SMTP server unavailable
+2025-08-08 02:46:25.000 [Thread-20] ERROR com.logpulse.analytics-service.error.Service1 - Failed to send notification email: SMTP server unavailable
+2025-08-08 02:56:41.000 [Thread-7] ERROR com.logpulse.auth-service.error.Service3 - Security violation detected: Multiple failed login attempts from IP 192.168.211.166
+2025-08-08 02:11:44.000 [Thread-13] ERROR com.logpulse.email-service.error.Service3 - NullPointerException in user authentication: Invalid session token
+2025-08-07 20:16:42.000 [Thread-1] ERROR com.logpulse.user-service.error.Service5 - File upload failed: Maximum file size exceeded for user 1352
+2025-08-07 19:57:39.000 [Thread-19] ERROR com.logpulse.order-service.error.Service2 - External API call failed: HTTP 500 from payment gateway
+2025-08-08 01:10:12.000 [Thread-6] ERROR com.logpulse.email-service.error.Service4 - Security violation detected: Multiple failed login attempts from IP 192.168.65.240
+2025-08-07 19:06:50.000 [Thread-17] ERROR com.logpulse.order-service.error.Service1 - Database connection failed: Connection timeout after 30 seconds
+2025-08-08 03:00:56.000 [Thread-16] ERROR com.logpulse.analytics-service.error.Service2 - NullPointerException in user authentication: Invalid session token
+2025-08-07 20:38:23.000 [Thread-9] ERROR com.logpulse.analytics-service.error.Service2 - Database connection failed: Connection timeout after 30 seconds
+2025-08-07 23:07:12.000 [Thread-3] ERROR com.logpulse.email-service.error.Service5 - Security violation detected: Multiple failed login attempts from IP 192.168.224.94
+2025-08-08 02:15:43.000 [Thread-20] ERROR com.logpulse.user-service.error.Service3 - File upload failed: Maximum file size exceeded for user 2536
+2025-08-07 19:56:36.000 [Thread-7] ERROR com.logpulse.notification-service.error.Service3 - Failed to send notification email: SMTP server unavailable
+2025-08-07 18:46:36.000 [Thread-1] ERROR com.logpulse.analytics-service.error.Service5 - Database connection failed: Connection timeout after 30 seconds
+2025-08-07 21:58:02.000 [Thread-1] ERROR com.logpulse.inventory-service.error.Service3 - Database connection failed: Connection timeout after 30 seconds
+2025-08-07 19:06:33.000 [Thread-5] ERROR com.logpulse.file-service.error.Service1 - Memory allocation error: OutOfMemoryError in image processing
+2025-08-07 19:55:20.000 [Thread-17] ERROR com.logpulse.user-service.error.Service3 - Order processing failed: Product ID 440 not found
+2025-08-08 03:14:07.000 [Thread-2] ERROR com.logpulse.payment-service.error.Service5 - Failed to send notification email: SMTP server unavailable
+2025-08-08 01:11:33.000 [Thread-17] ERROR com.logpulse.payment-service.error.Service4 - Memory allocation error: OutOfMemoryError in image processing
+2025-08-07 23:02:11.000 [Thread-14] ERROR com.logpulse.email-service.error.Service4 - Failed to process payment for user ID: 8425. Reason: Insufficient funds
+2025-08-07 20:35:21.000 [Thread-4] ERROR com.logpulse.api-gateway.error.Service3 - Failed to process payment for user ID: 539. Reason: Insufficient funds
+2025-08-08 01:31:09.000 [Thread-18] ERROR com.logpulse.payment-service.error.Service1 - Memory allocation error: OutOfMemoryError in image processing

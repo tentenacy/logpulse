@@ -25,6 +25,7 @@ public class BatchLogConsumerService {
     private final ElasticsearchService elasticsearchService;
     private final LogMetricsService logMetricsService;
     private final RealTimeErrorMonitorService errorMonitorService;
+    private final LogStatisticsService logStatisticsService;
     private final LogPatternDetector patternDetector;
     private final LogCompressionService compressionService;
     private final ObjectMapper objectMapper;
@@ -36,6 +37,7 @@ public class BatchLogConsumerService {
                                    ElasticsearchService elasticsearchService,
                                    LogMetricsService logMetricsService,
                                    RealTimeErrorMonitorService errorMonitorService,
+                                   LogStatisticsService logStatisticsService,
                                    LogPatternDetector patternDetector,
                                    LogCompressionService compressionService,
                                    ObjectMapper objectMapper) {
@@ -43,6 +45,7 @@ public class BatchLogConsumerService {
         this.elasticsearchService = elasticsearchService;
         this.logMetricsService = logMetricsService;
         this.errorMonitorService = errorMonitorService;
+        this.logStatisticsService = logStatisticsService;
         this.patternDetector = patternDetector;
         this.compressionService = compressionService;
         this.objectMapper = objectMapper;
@@ -133,6 +136,10 @@ public class BatchLogConsumerService {
             try {
                 jdbcBatchInsertService.batchInsert(logEntries);
                 log.debug("JDBC 배치 업데이트를 사용하여 {}개 로그 항목 저장 완료", logEntries.size());
+
+                // 통계 대량 업데이트 (추가)
+                logStatisticsService.batchUpdateStatistics(logEntries);
+
             } catch (Exception e) {
                 log.error("로그를 데이터베이스에 저장하는 중 오류 발생: {}", e.getMessage(), e);
             }

@@ -57,4 +57,14 @@ public class IntegrationConfig {
     public MessageChannel errorChannel() {
         return new PublishSubscribeChannel(integrationExecutor());
     }
+
+    @Bean
+    public MessageChannel enrichedLogChannel() {
+        return new DirectChannel();
+    }
+
+    @Bean
+    public MessageChannel filteredLogChannel() {
+        return new DirectChannel();
+    }
 }

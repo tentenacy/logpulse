@@ -33,7 +33,7 @@ public class LogFilter {
         }
     }
 
-    @Filter(inputChannel = "processedLogChannel", outputChannel = "processedLogChannel")
+    @Filter(inputChannel = "enrichedLogChannel", outputChannel = "filteredLogChannel")
     public boolean filterLog(Message<LogEventDto> message) {
         LogEventDto logEvent = message.getPayload();
 

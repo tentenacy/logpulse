@@ -29,6 +29,7 @@ public class LogService {
     private final RealTimeErrorMonitorService errorMonitorService;
     private final LogPatternDetector patternDetector;
     private final LogCompressionService compressionService;
+    private final LogStatisticsService logStatisticsService;
 
     @Transactional
     public LogEntryResponse createLog(LogEntryRequest request) {
@@ -62,6 +63,12 @@ public class LogService {
 
         LogEntry savedEntry = logRepository.save(logEntry);
         log.debug("로그 항목이 데이터베이스에 저장됨: {}", savedEntry.getId());
+
+        // 통계 업데이트
+        logStatisticsService.updateStatistics(
+                savedEntry.getSource(),
+                savedEntry.getLogLevel(),
+                savedEntry.getCreatedAt());
 
         LogEventDto eventDto = LogEventDto.builder()
                 .source(savedEntry.getSource())

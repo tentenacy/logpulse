@@ -112,7 +112,7 @@ logpulse:
     archive-days: 30
   alert:
     email:
-      enabled: true
+      enabled: false
       sender: ${mail.sender:noreply@example.com}
       recipients: ${mail.recipients:admin@example.com}
     error-threshold: 10

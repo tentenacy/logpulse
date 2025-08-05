@@ -46,7 +46,7 @@ logpulse:
     min-level: DEBUG
   alert:
     email:
-      enabled: true
+      enabled: false
   elasticsearch:
     bulk-size: 100
     index-prefix: logpulse-test-

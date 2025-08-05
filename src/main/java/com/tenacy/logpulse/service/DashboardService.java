@@ -6,6 +6,7 @@ import com.tenacy.logpulse.api.dto.LogEntryResponse;
 import com.tenacy.logpulse.api.dto.SystemStatusResponse;
 import com.tenacy.logpulse.domain.LogEntry;
 import com.tenacy.logpulse.domain.LogRepository;
+import com.tenacy.logpulse.domain.LogStatisticsRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -29,25 +30,26 @@ import java.util.stream.Collectors;
 public class DashboardService {
 
     private final LogRepository logRepository;
+    private final LogStatisticsRepository logStatisticsRepository;
 
     public DashboardStatsResponse getDashboardStats(LocalDateTime start, LocalDateTime end, String source) {
-        // 기본 시간 범위 설정 (기본: 최근 24시간)
+        // 기본 시간 범위 설정
         LocalDateTime endTime = end != null ? end : LocalDateTime.now();
         LocalDateTime startTime = start != null ? start : endTime.minusHours(24);
 
-        // 로그 레벨별 카운트
-        LogCountResponse logCounts = getLogCounts(startTime, endTime, source);
+        // 로그 레벨별 카운트 (통계 테이블 사용)
+        LogCountResponse logCounts = getLogCountsFromStats(startTime, endTime, source);
 
-        // 시간별 통계
-        Map<String, Object> hourlyStats = getHourlyStats(LocalDate.now());
+        // 시간별 통계 (통계 테이블 사용)
+        Map<String, Object> hourlyStats = getHourlyStatsFromStats(LocalDate.now());
 
-        // 소스별 통계
-        Map<String, Object> sourceStats = getSourceStats(startTime, endTime);
+        // 소스별 통계 (통계 테이블 사용)
+        Map<String, Object> sourceStats = getSourceStatsFromStats(startTime, endTime);
 
         // 시스템 상태
         SystemStatusResponse systemStatus = getSystemStatus();
 
-        // 최근 오류 로그
+        // 최근 오류 로그 (원본 로그 테이블 사용)
         Map<String, Object> recentErrors = getRecentErrors();
 
         return DashboardStatsResponse.builder()
@@ -58,6 +60,71 @@ public class DashboardService {
                 .recentErrors(recentErrors)
                 .timestamp(LocalDateTime.now())
                 .build();
+    }
+
+    public LogCountResponse getLogCountsFromStats(LocalDateTime start, LocalDateTime end, String source) {
+        try {
+            // 날짜 범위 계산
+            LocalDate startDate = start.toLocalDate();
+            LocalDate endDate = end.toLocalDate();
+
+            // 로그 레벨별 집계 쿼리
+            List<Object[]> levelStats;
+
+            if (source != null && !source.isEmpty()) {
+                // 소스 필터가 있는 경우의 쿼리 (커스텀 쿼리 필요)
+                levelStats = logStatisticsRepository.findLevelStatsByDateRangeAndSource(startDate, endDate, source);
+            } else {
+                // 전체 통계
+                levelStats = logStatisticsRepository.findLevelStatsByDateRange(startDate, endDate);
+            }
+
+            // 결과 파싱
+            long errorCount = 0L;
+            long warnCount = 0L;
+            long infoCount = 0L;
+            long debugCount = 0L;
+            long totalCount = 0L;
+
+            for (Object[] row : levelStats) {
+                String level = (String) row[0];
+                Long count = ((Number) row[1]).longValue();
+
+                switch (level.toUpperCase()) {
+                    case "ERROR":
+                        errorCount = count;
+                        break;
+                    case "WARN":
+                        warnCount = count;
+                        break;
+                    case "INFO":
+                        infoCount = count;
+                        break;
+                    case "DEBUG":
+                        debugCount = count;
+                        break;
+                }
+
+                totalCount += count;
+            }
+
+            // 오류율 계산
+            double errorRate = totalCount > 0 ? (double) errorCount / totalCount * 100 : 0;
+
+            return LogCountResponse.builder()
+                    .error(errorCount)
+                    .warn(warnCount)
+                    .info(infoCount)
+                    .debug(debugCount)
+                    .total(totalCount)
+                    .errorRate(Math.round(errorRate * 100.0) / 100.0)
+                    .build();
+        } catch (Exception e) {
+            log.error("통계 테이블에서 로그 카운트 조회 중 오류 발생", e);
+
+            // 오류 발생 시 원본 로그 테이블에서 조회 (기존 메서드 호출)
+            return getLogCounts(start, end, source);
+        }
     }
 
     public LogCountResponse getLogCounts(LocalDateTime start, LocalDateTime end, String source) {
@@ -149,6 +216,54 @@ public class DashboardService {
         }
     }
 
+    public Map<String, Object> getHourlyStatsFromStats(LocalDate date) {
+        try {
+            // 통계 테이블에서 시간별 데이터 조회
+            List<Object[]> hourlyData = logStatisticsRepository.findHourlyStatsByDate(date);
+
+            // 결과를 시간별로 구성
+            Map<Integer, Map<String, Long>> hourMap = new HashMap<>();
+
+            for (Object[] row : hourlyData) {
+                Integer hour = (Integer) row[0];
+                String level = (String) row[1];
+                Long count = ((Number) row[2]).longValue();
+
+                hourMap.computeIfAbsent(hour, k -> new HashMap<>())
+                        .put(level, count);
+            }
+
+            // 응답 포맷에 맞게 변환
+            List<Map<String, Object>> hourlyStats = new ArrayList<>();
+
+            for (int hour = 0; hour < 24; hour++) {
+                Map<String, Long> counts = hourMap.getOrDefault(hour, Map.of());
+
+                Map<String, Object> hourData = new HashMap<>();
+                hourData.put("hour", String.format("%02d:00", hour));
+                hourData.put("error", counts.getOrDefault("ERROR", 0L));
+                hourData.put("warn", counts.getOrDefault("WARN", 0L));
+                hourData.put("info", counts.getOrDefault("INFO", 0L));
+                hourData.put("debug", counts.getOrDefault("DEBUG", 0L));
+
+                long total = counts.values().stream().mapToLong(Long::longValue).sum();
+                hourData.put("total", total);
+
+                hourlyStats.add(hourData);
+            }
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("date", date);
+            result.put("hourlyStats", hourlyStats);
+            return result;
+        } catch (Exception e) {
+            log.error("통계 테이블에서 시간별 통계 조회 중 오류 발생", e);
+
+            // 오류 발생 시 원본 로그 테이블에서 조회 (기존 메서드 호출)
+            return getHourlyStats(date);
+        }
+    }
+
     public Map<String, Object> getSourceStats(LocalDateTime start, LocalDateTime end) {
         try {
             // 기본 시간 범위 설정 (기본: 최근 24시간)
@@ -180,6 +295,38 @@ public class DashboardService {
                     "endTime", end,
                     "sourceStats", List.of()
             );
+        }
+    }
+
+    public Map<String, Object> getSourceStatsFromStats(LocalDateTime start, LocalDateTime end) {
+        try {
+            // 날짜 범위 계산
+            LocalDate startDate = start.toLocalDate();
+            LocalDate endDate = end.toLocalDate();
+
+            // 소스별 집계 조회
+            List<Object[]> sourceData = logStatisticsRepository.findSourceStatsByDateRange(startDate, endDate);
+
+            // 결과 변환
+            List<Map<String, Object>> sourceStats = new ArrayList<>();
+
+            for (Object[] row : sourceData) {
+                Map<String, Object> stat = new HashMap<>();
+                stat.put("source", row[0]);
+                stat.put("count", ((Number) row[1]).longValue());
+                sourceStats.add(stat);
+            }
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("startTime", start);
+            result.put("endTime", end);
+            result.put("sourceStats", sourceStats);
+            return result;
+        } catch (Exception e) {
+            log.error("통계 테이블에서 소스별 통계 조회 중 오류 발생", e);
+
+            // 오류 발생 시 원본 로그 테이블에서 조회 (기존 메서드 호출)
+            return getSourceStats(start, end);
         }
     }
 
