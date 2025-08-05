@@ -27,6 +27,6 @@ public class LogCleanupService {
 
         int deletedCount = logRepository.deleteLogEntriesOlderThan(threshold);
 
-        log.info("Cleaned up {} log entries older than {} days", deletedCount, retentionDays);
+        log.info("{}일보다 오래된 로그 항목 {}개 정리 완료", retentionDays, deletedCount);
     }
 }

@@ -24,9 +24,9 @@ public class LogProducerService {
         try {
             String logEventJson = objectMapper.writeValueAsString(logEventDto);
             kafkaTemplate.send(rawLogsTopic, logEventDto.getSource(), logEventJson);
-            log.debug("Sent log event to Kafka: {}", logEventJson);
+            log.debug("로그 이벤트 Kafka로 전송: {}", logEventJson);
         } catch (JsonProcessingException e) {
-            log.error("Failed to serialize log event: {}", logEventDto, e);
+            log.error("로그 이벤트 직렬화 실패: {}", logEventDto, e);
         }
     }
 }

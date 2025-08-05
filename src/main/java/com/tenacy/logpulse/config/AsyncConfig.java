@@ -22,12 +22,6 @@ public class AsyncConfig {
     @Value("${logpulse.async.queue-capacity:500}")
     private int queueCapacity;
 
-    @Value("${logpulse.elasticsearch.thread-pool-size:3}")
-    private int esThreadPoolSize;
-
-    @Value("${logpulse.jdbc.thread-pool-size:3}")
-    private int jdbcThreadPoolSize;
-
     @Bean(name = "emailTaskExecutor")
     public Executor emailTaskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
@@ -35,30 +29,6 @@ public class AsyncConfig {
         executor.setMaxPoolSize(5);
         executor.setQueueCapacity(100);
         executor.setThreadNamePrefix("email-");
-        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-        executor.initialize();
-        return executor;
-    }
-
-    @Bean(name = "elasticsearchExecutor")
-    public Executor elasticsearchExecutor() {
-        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(esThreadPoolSize);
-        executor.setMaxPoolSize(esThreadPoolSize * 2);
-        executor.setQueueCapacity(500);
-        executor.setThreadNamePrefix("es-");
-        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-        executor.initialize();
-        return executor;
-    }
-
-    @Bean(name = "jdbcBatchExecutor")
-    public Executor jdbcBatchExecutor() {
-        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(jdbcThreadPoolSize);
-        executor.setMaxPoolSize(jdbcThreadPoolSize * 2);
-        executor.setQueueCapacity(500);
-        executor.setThreadNamePrefix("jdbc-");
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
         executor.initialize();
         return executor;
