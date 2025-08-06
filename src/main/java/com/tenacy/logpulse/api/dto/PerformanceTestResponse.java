@@ -13,4 +13,7 @@ public class PerformanceTestResponse {
     private int totalLogs;
     private long elapsedTimeMs;
     private double logsPerSecond;
+    private long originalSize;
+    private long compressedSize;
+    private double compressionRate;
 }

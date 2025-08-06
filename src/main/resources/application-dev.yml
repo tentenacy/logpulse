@@ -35,7 +35,7 @@ spring:
 logging:
   level:
     root: WARN
-    com.tenacy.logpulse: DEBUG
+    com.tenacy.logpulse: WARN
     org.springframework: WARN
     org.hibernate: WARN
     org.hibernate.SQL: WARN
