@@ -23,11 +23,10 @@ public class LogCompressionService {
     private int minCompressionSize;
 
     public boolean shouldCompress(String content) {
-        return true;
-//        return compressionEnabled &&
-//                content != null &&
-//                content.length() > minCompressionSize &&
-//                !isCompressed(content);
+        return compressionEnabled &&
+                content != null &&
+                content.length() > minCompressionSize &&
+                !isCompressed(content);
     }
 
     public String compressContent(String content) {
