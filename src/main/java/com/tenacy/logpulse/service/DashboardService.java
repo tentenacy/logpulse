@@ -31,6 +31,7 @@ public class DashboardService {
 
     private final LogRepository logRepository;
     private final LogStatisticsRepository logStatisticsRepository;
+    private final SystemMetricsService systemMetricsService;
 
     public DashboardStatsResponse getDashboardStats(LocalDateTime start, LocalDateTime end, String source) {
         // 기본 시간 범위 설정
@@ -351,21 +352,21 @@ public class DashboardService {
 
             double memoryUsagePercent = (double) usedMemory / maxMemory * 100;
 
-            // 최근 24시간 로그 기반 통계
-            LocalDateTime oneDayAgo = LocalDateTime.now().minusHours(24);
-            long totalLogs = logRepository.countByCreatedAtAfter(oneDayAgo);
-            long errorLogs = logRepository.countByLogLevelAndCreatedAtAfter("ERROR", oneDayAgo);
+            // 실시간 메트릭 서비스에서 처리량, 오류율, 응답시간 가져오기
+            long processedRate = systemMetricsService.getAverageProcessedRate();
+            double errorRate = systemMetricsService.getAverageErrorRate();
+            int avgResponseTime = systemMetricsService.getAverageResponseTime();
 
-            // 오류율 계산
-            double errorRate = totalLogs > 0 ? (double) errorLogs / totalLogs * 100 : 0;
+            // 시스템 상태 결정
+            String status = determineSystemStatus(errorRate, avgResponseTime);
 
             return SystemStatusResponse.builder()
                     .uptime(uptimeString)
                     .memoryUsage(Math.round(memoryUsagePercent * 100.0) / 100.0)
-                    .processedRate(totalLogs / 24)
+                    .processedRate(processedRate)
                     .errorRate(Math.round(errorRate * 100.0) / 100.0)
-                    .avgResponseTime(0)
-                    .status("UP")
+                    .avgResponseTime(avgResponseTime)
+                    .status(status)
                     .timestamp(LocalDateTime.now())
                     .build();
         } catch (Exception e) {
@@ -379,6 +380,17 @@ public class DashboardService {
                     .status("ERROR")
                     .timestamp(LocalDateTime.now())
                     .build();
+        }
+    }
+
+    private String determineSystemStatus(double errorRate, int avgResponseTime) {
+        // 높은 오류율 또는 높은 응답 시간은 시스템 상태에 영향을 줌
+        if (errorRate > 15.0 || avgResponseTime > 500) {
+            return "DEGRADED";
+        } else if (errorRate > 5.0 || avgResponseTime > 200) {
+            return "WARNING";
+        } else {
+            return "UP";
         }
     }
 
