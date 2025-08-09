@@ -30,6 +30,7 @@ public class LogService {
     private final LogPatternDetector patternDetector;
     private final LogCompressionService compressionService;
     private final LogStatisticsService logStatisticsService;
+    private final SystemMetricsService systemMetricsService;
 
     @Transactional
     public LogEntryResponse createLog(LogEntryRequest request) {
@@ -46,7 +47,7 @@ public class LogService {
 
         if (shouldCompress) {
             finalContent = compressionService.compressContent(originalContent);
-            compressedSize = finalContent.getBytes(StandardCharsets.UTF_8).length;
+            compressedSize = finalContent != null ? finalContent.getBytes(StandardCharsets.UTF_8).length : 0;
             log.debug("로그 내용 압축됨: {}% 감소",
                     Math.round((1 - (double)compressedSize/originalSize) * 100));
         }
@@ -87,6 +88,12 @@ public class LogService {
         try {
             // 메트릭 수집
             logMetricsService.recordLog(eventDto);
+
+            // 실시간 메트릭 업데이트
+            systemMetricsService.recordProcessedLog();
+            if ("ERROR".equalsIgnoreCase(savedEntry.getLogLevel())) {
+                systemMetricsService.recordErrorLog();
+            }
         } catch (Exception e) {
             log.error("메트릭을 기록하는 중 오류 발생: {}", e.getMessage(), e);
         }

@@ -28,6 +28,7 @@ public class BatchLogConsumerService {
     private final LogStatisticsService logStatisticsService;
     private final LogPatternDetector patternDetector;
     private final LogCompressionService compressionService;
+    private final SystemMetricsService systemMetricsService;
     private final ObjectMapper objectMapper;
 
     @Value("${logpulse.consumer.max-batch-size:1000}")
@@ -40,6 +41,7 @@ public class BatchLogConsumerService {
                                    LogStatisticsService logStatisticsService,
                                    LogPatternDetector patternDetector,
                                    LogCompressionService compressionService,
+                                   SystemMetricsService systemMetricsService,
                                    ObjectMapper objectMapper) {
         this.jdbcBatchInsertService = jdbcBatchInsertService;
         this.elasticsearchService = elasticsearchService;
@@ -48,6 +50,7 @@ public class BatchLogConsumerService {
         this.logStatisticsService = logStatisticsService;
         this.patternDetector = patternDetector;
         this.compressionService = compressionService;
+        this.systemMetricsService = systemMetricsService;
         this.objectMapper = objectMapper;
     }
 
@@ -74,6 +77,7 @@ public class BatchLogConsumerService {
 
         List<LogEntry> logEntries = new ArrayList<>(batchSize);
         List<LogEntry> patternDetectionEntries = new ArrayList<>(batchSize);
+        int errorCount = 0; // 오류 로그 카운트 추가
 
         for (String message : messages) {
             try {
@@ -83,8 +87,10 @@ public class BatchLogConsumerService {
                 logMetricsService.recordLog(logEventDto);
 
                 // 실시간 오류 모니터링
-                if ("ERROR".equalsIgnoreCase(logEventDto.getLogLevel())) {
+                boolean isError = "ERROR".equalsIgnoreCase(logEventDto.getLogLevel());
+                if (isError) {
                     errorMonitorService.monitorLog(logEventDto);
+                    errorCount++; // 오류 카운트 증가
                 }
 
                 // 원본 내용
@@ -137,8 +143,18 @@ public class BatchLogConsumerService {
                 jdbcBatchInsertService.batchInsert(logEntries);
                 log.debug("JDBC 배치 업데이트를 사용하여 {}개 로그 항목 저장 완료", logEntries.size());
 
-                // 통계 대량 업데이트 (추가)
+                // 통계 대량 업데이트
                 logStatisticsService.batchUpdateStatistics(logEntries);
+
+                // 실시간 메트릭 업데이트 (추가)
+                for (int i = 0; i < logEntries.size(); i++) {
+                    systemMetricsService.recordProcessedLog();
+                }
+                if (errorCount > 0) {
+                    for (int i = 0; i < errorCount; i++) {
+                        systemMetricsService.recordErrorLog();
+                    }
+                }
 
             } catch (Exception e) {
                 log.error("로그를 데이터베이스에 저장하는 중 오류 발생: {}", e.getMessage(), e);
