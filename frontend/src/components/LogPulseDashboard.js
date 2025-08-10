@@ -533,7 +533,8 @@ export default function LogPulseDashboard() {
                     <div>
                       <p className="text-gray-500 text-sm font-medium">처리율</p>
                       <p className="text-3xl font-bold mt-1">{systemStatus.processedRate?.toLocaleString() || 0}</p>
-                      <p className="text-sm text-gray-500 mt-1">로그/분</p>
+                      <p className="text-sm text-gray-500 mt-1">로그/분 (5분 평균)</p>
+                      <p className="text-xs text-gray-400 mt-1">1분마다 갱신</p>
                     </div>
                     <div className="bg-green-100 p-3 rounded-full">
                       <Activity className="h-6 w-6 text-green-600" />
@@ -547,7 +548,8 @@ export default function LogPulseDashboard() {
                     <div>
                       <p className="text-gray-500 text-sm font-medium">오류율</p>
                       <p className="text-3xl font-bold mt-1">{systemStatus.errorRate || 0}%</p>
-                      <p className="text-sm text-gray-500 mt-1">전체 로그 대비</p>
+                      <p className="text-sm text-gray-500 mt-1">전체 로그 대비 (5분 평균)</p>
+                      <p className="text-xs text-gray-400 mt-1">1분마다 갱신</p>
                     </div>
                     <div className="bg-red-100 p-3 rounded-full">
                       <AlertTriangle className="h-6 w-6 text-red-600" />
@@ -559,9 +561,10 @@ export default function LogPulseDashboard() {
                 <div className="bg-white p-6 rounded-lg shadow-md">
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="text-gray-500 text-sm font-medium">평균 응답 시간</p>
+                      <p className="text-gray-500 text-sm font-medium">API 응답 시간</p>
                       <p className="text-3xl font-bold mt-1">{systemStatus.avgResponseTime || 0}ms</p>
-                      <p className="text-sm text-gray-500 mt-1">최근 1시간</p>
+                      <p className="text-sm text-gray-500 mt-1">최근 5분 평균</p>
+                      <p className="text-xs text-gray-400 mt-1">1분마다 갱신</p>
                     </div>
                     <div className="bg-blue-100 p-3 rounded-full">
                       <Clock className="h-6 w-6 text-blue-600" />

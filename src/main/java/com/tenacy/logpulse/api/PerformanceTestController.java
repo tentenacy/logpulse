@@ -128,10 +128,11 @@ public class PerformanceTestController {
         // 별도로 압축률 측정 (실제 시스템 로직과 분리)
         CompressionStats compressionStats = measureCompressionPerformance(logContentSamples);
 
-        log.info("성능 테스트 완료: {}개 로그, {}ms 소요 (초당 {:.2f}개 로그)",
-                totalLogs, elapsedTimeMs, logsPerSecond);
-        log.info("압축 성능: 원본 크기 {}bytes, 압축 후 {}bytes, 압축률 {:.2f}%",
-                compressionStats.originalSize, compressionStats.compressedSize, compressionStats.compressionRate);
+        log.info("성능 테스트 완료: {}개 로그, {}ms 소요 (초당 {}개 로그)",
+                totalLogs, elapsedTimeMs, String.format("%.2f", logsPerSecond));
+        log.info("압축 성능: 원본 크기 {}bytes, 압축 후 {}bytes, 압축률 {}%",
+                compressionStats.originalSize, compressionStats.compressedSize,
+                String.format("%.2f", compressionStats.compressionRate));
 
         // 응답 생성
         PerformanceTestResponse response = PerformanceTestResponse.builder()
