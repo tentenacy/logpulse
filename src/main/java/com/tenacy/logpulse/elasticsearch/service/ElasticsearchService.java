@@ -1,5 +1,6 @@
 package com.tenacy.logpulse.elasticsearch.service;
 
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import com.tenacy.logpulse.domain.LogEntry;
 import com.tenacy.logpulse.elasticsearch.document.LogDocument;
 import com.tenacy.logpulse.elasticsearch.repository.LogDocumentRepository;
@@ -8,11 +9,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.elasticsearch.client.elc.NativeQuery;
-import org.springframework.data.elasticsearch.client.elc.NativeQueryBuilder;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.data.elasticsearch.core.SearchHits;
-import org.springframework.data.elasticsearch.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -151,56 +150,48 @@ public class ElasticsearchService {
         }
 
         try {
-            NativeQueryBuilder queryBuilder = NativeQuery.builder();
+            BoolQuery.Builder b = new BoolQuery.Builder();
 
-            queryBuilder.withQuery(q -> {
-                return q.bool(b -> {
-                    if (keyword != null && !keyword.trim().isEmpty()) {
-                        String trimmedKeyword = keyword.trim();
-                        b.should(s -> s.match(m -> m.field("content").query(trimmedKeyword)));
-                        b.should(s -> s.match(m -> m.field("content.ngram").query(trimmedKeyword)));
-                        b.minimumShouldMatch("1");
-                    }
+            if (keyword != null && !keyword.trim().isEmpty()) {
+                String trimmedKeyword = keyword.trim();
+                b.should(s -> s.match(m -> m.field("content").query(trimmedKeyword)));
+                b.should(s -> s.match(m -> m.field("content.ngram").query(trimmedKeyword)));
+                b.minimumShouldMatch("1");
+            }
 
-                    if (level != null && !level.trim().isEmpty()) {
-                        b.must(m -> m.term(t -> t.field("logLevel").value(level.trim())));
-                    }
+            if (level != null && !level.trim().isEmpty()) {
+                b.must(m -> m.term(t -> t.field("logLevel").value(level.trim())));
+            }
 
-                    if (source != null && !source.trim().isEmpty()) {
-                        b.must(m -> m.wildcard(w -> w.field("source").value("*" + source.trim() + "*")));
-                    }
+            if (source != null && !source.trim().isEmpty()) {
+                b.must(m -> m.wildcard(w -> w.field("source").value("*" + source.trim() + "*")));
+            }
 
-                    if (content != null && !content.trim().isEmpty()) {
-                        b.must(m -> m.wildcard(w -> w.field("content").value("*" + content.trim() + "*")));
-                    }
+            if (start != null && end != null) {
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+                String startStr = start.format(formatter);
+                String endStr = end.format(formatter);
 
-                    if (start != null && end != null) {
-                        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
-                        String startStr = start.format(formatter);
-                        String endStr = end.format(formatter);
+                b.must(m -> m.range(r -> r
+                        .date(t -> t
+                                .field("timestamp")
+                                .gte(startStr)
+                                .lte(endStr))));
+            }
 
-                        b.must(m -> m.range(r -> r
-                                .date(t -> t
-                                        .field("timestamp")
-                                        .gte(startStr)
-                                        .lte(endStr))));
-                    }
+            if (keyword == null && level == null && source == null &&
+                    content == null && (start == null || end == null)) {
+                b.must(m -> m.matchAll(ma -> ma));
+            }
 
-                    if (keyword == null && level == null && source == null &&
-                            content == null && (start == null || end == null)) {
-                        b.must(m -> m.matchAll(ma -> ma));
-                    }
-
-                    return b;
-                });
-            });
-
-            // 페이징 설정
-            queryBuilder.withPageable(pageable);
+            co.elastic.clients.elasticsearch._types.query_dsl.Query query = b.build()._toQuery();
 
             // 최종 쿼리 생성
-            Query searchQuery = queryBuilder.build();
+            NativeQuery searchQuery = new NativeQuery(query);
 
+            // 페이징 설정
+            searchQuery.setPageable(pageable);
+            
             // 검색 실행
             SearchHits<LogDocument> searchHits = elasticsearchOperations.search(
                     searchQuery, LogDocument.class);
@@ -211,7 +202,7 @@ public class ElasticsearchService {
                     .collect(Collectors.toList());
 
         } catch (Exception e) {
-            log.error("Elasticsearch에서 복합 검색 중 오류 발생: {}", e.getMessage());
+            log.error("Elasticsearch에서 복합 검색 중 오류 발생: {}", e.getMessage(), e);
             elasticsearchAvailable = false;
             return Collections.emptyList();
         }

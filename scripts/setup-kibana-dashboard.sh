@@ -1,5 +1,4 @@
 #!/bin/bash
-# setup-kibana-dashboard.sh
 
 # Elasticsearch 접속 정보
 ES_HOST="localhost:19200"

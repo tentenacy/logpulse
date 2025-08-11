@@ -6,17 +6,17 @@ import com.tenacy.logpulse.elasticsearch.service.ElasticsearchService;
 import com.tenacy.logpulse.service.LogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.*;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -35,12 +35,15 @@ public class LogSearchController {
             @RequestParam(required = false) String level,
             @RequestParam(required = false) String source,
             @RequestParam(required = false) String content,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) ZonedDateTime start,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) ZonedDateTime end,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "timestamp") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir) {
+
+        LocalDateTime startLocal = start != null ? start.withZoneSameInstant(ZoneId.of("Asia/Seoul")).toLocalDateTime() : null;
+        LocalDateTime endLocal = end != null ? end.withZoneSameInstant(ZoneId.of("Asia/Seoul")).toLocalDateTime() : null;
 
         Sort.Direction direction = sortDir.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC;
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
@@ -48,7 +51,7 @@ public class LogSearchController {
         try {
             if (elasticsearchService.isAvailable()) {
                 List<LogDocument> logs = elasticsearchService.searchWith(
-                        keyword, level, source, content, start, end, pageable);
+                        keyword, level, source, content, startLocal, endLocal, pageable);
 
                 List<LogSearchResponse> responses = logs.stream()
                         .map(doc -> LogSearchResponse.builder()
@@ -71,7 +74,7 @@ public class LogSearchController {
         log.info("데이터베이스 검색으로 대체");
 
         Page<LogSearchResponse> result = logService.retrieveLogsWith(
-                        keyword, level, source, content, start, end, pageable)
+                        keyword, level, source, content, startLocal, endLocal, pageable)
                 .map(dto -> LogSearchResponse.builder()
                         .id(dto.getId().toString())
                         .source(dto.getSource())

@@ -147,9 +147,9 @@ public class SystemMetricsService {
         lastAggregationTime = LocalDateTime.now();
 
         // 로그
-        log.debug("메트릭 집계 완료 - 처리량: {}/분, 오류율: {:.2f}%, 응답시간: {}ms",
+        log.debug("메트릭 집계 완료 - 처리량: {}/분, 오류율: {}%, 응답시간: {}ms",
                 processedLogsPerMinute[(currentMinuteIndex - 1 + 10) % 10],
-                getAverageErrorRate(),
+                String.format("%.2f", getAverageErrorRate()),
                 getAverageResponseTime());
     }
 
@@ -173,8 +173,8 @@ public class SystemMetricsService {
                 avgResponseTimePerMinute[index] = 50; // 기본값 50ms
             }
 
-            log.info("초기 메트릭 로드 완료 - 최근 평균 처리량: {}/분, 평균 오류율: {:.2f}%",
-                    getAverageProcessedRate(), getAverageErrorRate());
+            log.info("초기 메트릭 로드 완료 - 최근 평균 처리량: {}/분, 평균 오류율: {}%",
+                    getAverageProcessedRate(), String.format("%.2f", getAverageErrorRate()));
 
         } catch (Exception e) {
             log.error("초기 메트릭 로드 실패", e);

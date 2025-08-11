@@ -14,6 +14,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 
 @Slf4j
 @RestController
@@ -36,12 +38,15 @@ public class LogController {
             @RequestParam(defaultValue = "desc") String sortDir,
             @RequestParam(required = false) String level,
             @RequestParam(required = false) String source,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) ZonedDateTime start,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) ZonedDateTime end) {
+
+        LocalDateTime startLocal = start != null ? start.withZoneSameInstant(ZoneId.of("Asia/Seoul")).toLocalDateTime() : null;
+        LocalDateTime endLocal = end != null ? end.withZoneSameInstant(ZoneId.of("Asia/Seoul")).toLocalDateTime() : null;
 
         Sort.Direction direction = sortDir.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC;
         Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
 
-        return ResponseEntity.ok(logService.retrieveLogsWith(null, level, source, null, start, end, pageable));
+        return ResponseEntity.ok(logService.retrieveLogsWith(null, level, source, null, startLocal, endLocal, pageable));
     }
 }

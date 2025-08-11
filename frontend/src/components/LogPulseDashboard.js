@@ -69,9 +69,6 @@ export default function LogPulseDashboard() {
   const [totalElements, setTotalElements] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
 
-  /**
-   * 시간 범위 필터에 따른 시작 시간 계산
-   */
   const getTimeRangeParams = useCallback(() => {
     const now = new Date();
     let startTime;
@@ -120,6 +117,8 @@ export default function LogPulseDashboard() {
 
     try {
       const timeParams = getTimeRangeParams();
+
+      console.log(timeParams)
 
       // 통합 대시보드 데이터 로드
       const stats = await logpulseApi.getDashboardStats(timeParams);
@@ -188,6 +187,7 @@ export default function LogPulseDashboard() {
       // 검색어가 있는 경우 검색 API 사용
       let response;
       if (searchQuery) {
+        params.sortBy = 'timestamp'
         response = await logpulseApi.searchLogs({
           ...params,
           keyword: searchQuery
