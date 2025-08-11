@@ -53,12 +53,16 @@ public class DashboardService {
         // 최근 오류 로그 (원본 로그 테이블 사용)
         Map<String, Object> recentErrors = getRecentErrors();
 
+        // 오류 추세 데이터
+        Map<String, Object> errorTrends = getErrorTrends(startTime.minusDays(7), endTime);
+
         return DashboardStatsResponse.builder()
                 .logCounts(logCounts)
                 .hourlyStats(hourlyStats)
                 .sourceStats(sourceStats)
                 .systemStatus(systemStatus)
                 .recentErrors(recentErrors)
+                .errorTrends(errorTrends)
                 .timestamp(LocalDateTime.now())
                 .build();
     }
@@ -413,6 +417,59 @@ public class DashboardService {
             return Map.of(
                     "timestamp", LocalDateTime.now(),
                     "recentErrors", List.of()
+            );
+        }
+    }
+
+    public Map<String, Object> getErrorTrends(LocalDateTime start, LocalDateTime end) {
+        try {
+            // 기본 시간 범위 설정 (기본: 최근 7일)
+            LocalDateTime endTime = end != null ? end : LocalDateTime.now();
+            LocalDateTime startTime = start != null ? start : endTime.minusDays(7);
+
+            List<Map<String, Object>> dailyStats = new ArrayList<>();
+
+            // 각 날짜별 데이터 수집
+            LocalDate currentDate = startTime.toLocalDate();
+            LocalDate endDate = endTime.toLocalDate();
+
+            while (!currentDate.isAfter(endDate)) {
+                LocalDateTime dayStart = currentDate.atStartOfDay();
+                LocalDateTime dayEnd = currentDate.plusDays(1).atStartOfDay();
+
+                // 해당 날짜의 전체 로그 수
+                long totalLogs = logRepository.countByCreatedAtBetween(dayStart, dayEnd);
+
+                // 해당 날짜의 오류 로그 수
+                long errorLogs = logRepository.countByLogLevelAndCreatedAtBetween("ERROR", dayStart, dayEnd);
+
+                // 오류율 계산
+                double errorRate = totalLogs > 0 ? (double) errorLogs / totalLogs * 100 : 0;
+                errorRate = Math.round(errorRate * 100.0) / 100.0; // 소수점 두 자리로 반올림
+
+                Map<String, Object> dayStat = new HashMap<>();
+                dayStat.put("date", currentDate.toString());
+                dayStat.put("totalLogs", totalLogs);
+                dayStat.put("errorLogs", errorLogs);
+                dayStat.put("errorRate", errorRate);
+
+                dailyStats.add(dayStat);
+
+                // 다음 날짜로 이동
+                currentDate = currentDate.plusDays(1);
+            }
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("startDate", startTime.toLocalDate().toString());
+            result.put("endDate", endTime.toLocalDate().toString());
+            result.put("dailyStats", dailyStats);
+            return result;
+        } catch (Exception e) {
+            log.error("오류 추세 데이터 조회 중 오류 발생", e);
+            return Map.of(
+                    "startDate", start != null ? start.toLocalDate().toString() : "",
+                    "endDate", end != null ? end.toLocalDate().toString() : "",
+                    "dailyStats", List.of()
             );
         }
     }
