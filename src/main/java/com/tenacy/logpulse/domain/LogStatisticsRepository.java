@@ -12,12 +12,6 @@ import java.util.List;
 @Repository
 public interface LogStatisticsRepository extends JpaRepository<LogStatistics, Long> {
 
-    // 특정 날짜의 모든 통계 조회
-    List<LogStatistics> findByLogDate(LocalDate date);
-
-    // 특정 날짜 및 시간의 통계 조회
-    List<LogStatistics> findByLogDateAndHour(LocalDate date, Integer hour);
-
     // 특정 날짜, 소스, 레벨, 시간에 해당하는 통계 찾기
     LogStatistics findByLogDateAndSourceAndLogLevelAndHour(
             LocalDate date, String source, String logLevel, Integer hour);

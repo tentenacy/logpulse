@@ -14,18 +14,14 @@ import java.util.List;
 
 @Repository
 public interface LogRepository extends JpaRepository<LogEntry, Long> {
-    List<LogEntry> findByLogLevel(String logLevel);
-    List<LogEntry> findBySourceContaining(String source);
     List<LogEntry> findByLogLevelOrderByCreatedAtDesc(String logLevel, Pageable pageable);
 
-    long countByCreatedAtAfter(LocalDateTime dateTime);
     long countByLogLevelAndCreatedAtBetween(String logLevel, LocalDateTime start, LocalDateTime end);
     long countByLogLevelAndSourceContainingAndCreatedAtBetween(
             String logLevel, String source, LocalDateTime start, LocalDateTime end);
     long countBySourceContainingAndCreatedAtBetween(
             String source, LocalDateTime start, LocalDateTime end);
     long countByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
-    long countByLogLevelAndCreatedAtAfter(String logLevel, LocalDateTime dateTime);
 
     @Modifying
     @Query("DELETE FROM LogEntry l WHERE l.createdAt < :threshold")
