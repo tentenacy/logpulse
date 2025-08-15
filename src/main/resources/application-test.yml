@@ -37,7 +37,7 @@ logpulse:
     chunk-size: 50
     archive-days: 7
   collector:
-    directory: /app/test-logs
+    directory: ${user.dir:}/test-logs
     file-pattern: "*.log"
   kafka:
     topics:

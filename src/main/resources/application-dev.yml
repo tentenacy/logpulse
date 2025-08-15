@@ -42,7 +42,7 @@ logging:
 
 logpulse:
   collector:
-    directory: /app/logs
+    directory: ${user.dir:}/logs
     file-pattern: "*.log"
   kafka:
     topics:
