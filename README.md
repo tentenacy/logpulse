@@ -550,7 +550,7 @@ export APP_ENVIRONMENT=local  # 기본값은 docker
 
 #### 1. `secrets.yml` 파일 구성
 
-애플리케이션의 루트 디렉토리에 `secrets.yml` 파일을 생성하고 다음과 같이 이메일 설정을 추가합니다.
+애플리케이션의 resources 폴더에 `secrets.yml` 파일을 생성하고 다음과 같이 이메일 설정을 추가합니다.
 
 ```yaml
 mail:
