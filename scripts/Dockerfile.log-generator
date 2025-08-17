@@ -13,4 +13,8 @@ RUN chmod +x /usr/local/bin/generate-logs.sh
 RUN mkdir -p /app/logs
 
 # 스크립트 실행 (bash 사용)
-CMD ["/bin/bash", "/usr/local/bin/generate-logs.sh"]
+CMD ["/bin/bash", "-c", "\
+  sed -i 's/\r$//' /usr/local/bin/generate-logs.sh && \
+  if [ -z \"$(ls -A /app/logs 2>/dev/null)\" ]; then \
+    exec /usr/local/bin/generate-logs.sh; \
+  fi"]
