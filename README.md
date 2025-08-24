@@ -492,7 +492,7 @@ public class LogStatisticsProcessor implements ItemProcessor<LogEntry, LogStatis
 
 1. 저장소 클론
 ```bash
-git clone https://github.com/username/logpulse.git
+git clone https://github.com/tentenacy/logpulse.git
 cd logpulse
 ```
 
@@ -529,7 +529,7 @@ http://localhost:15601
 
 1. 프로젝트 클론 및 이동
 ```bash
-git clone https://github.com/username/logpulse.git
+git clone https://github.com/tentenacy/logpulse.git
 cd logpulse
 ```
 
@@ -589,7 +589,7 @@ logpulse:
 
 ## API 문서
 
-주요 API 엔드포인트
+### 주요 API 엔드포인트
 
 | 엔드포인트 | 메서드 | 설명 |
 |-----------|------|------|

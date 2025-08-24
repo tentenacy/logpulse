@@ -5,8 +5,8 @@ spring:
     active: dev
   config:
     import:
-      - classpath:secrets.yml
-      - classpath:env-${APP_ENVIRONMENT:docker}.yml
+      - optional:classpath:secrets.yml
+      - optional:classpath:env-${APP_ENVIRONMENT:docker}.yml
   datasource:
     url: jdbc:mysql://${logpulse.mysql.host}:${logpulse.mysql.port}/logpulse?rewriteBatchedStatements=true&cachePrepStmts=true&useServerPrepStmts=true&prepStmtCacheSize=500&prepStmtCacheSqlLimit=2048
     driver-class-name: com.mysql.cj.jdbc.Driver
